@@ -67,7 +67,6 @@ class CommonDB(object):
         elif DB_TYPE == 'oracle':
             self.create_table_oracle(table_name)
 
-
     def insert_data(self, table, **kwargs):
         if DB_TYPE == 'mysql':
             self.insert_data_mysql(table, **kwargs)
@@ -75,6 +74,11 @@ class CommonDB(object):
             self.insert_data_oracle(table, **kwargs)
 
 
+    def select_normal(self, cols=[], table='', where=''):
+        if DB_TYPE == 'mysql':
+            self.select_normal_mysql(cols=[], table='', where='')
+        elif DB_TYPE == 'oracle':
+            self.select_normal_oracle(cols=[], table='', where='')
 
 
     def count_time(func):

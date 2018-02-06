@@ -17,7 +17,8 @@ from config import *
 from util import logger, log_file_path
 from optparse import OptionParser
 from multiupload import upload_file_multipart
-
+import configobj
+from common_mysql_db import CommonMysqlDB
 reload(sys) 
 sys.setdefaultencoding('gbk')
 
@@ -27,6 +28,7 @@ UPLOAD_DIR = DEFAULT_UPLOAD_DIR
 BUCKET_PREF = ""
 IS_MOVE = False
 CONN = None
+DB_OBJECT = None  # 数据库对象
 
 def init_db_connection():
     try:
@@ -240,6 +242,7 @@ def ensure_table_created():
     return True
 
 
+
 def get_user_paras():
     try:
         opt = OptionParser()
@@ -294,6 +297,26 @@ def init_log(*logfiles):
     for log in logfiles:
         commands.getoutput('cat /dev/null > %s' % log)
         logger.info("Empty %s finished!" % log)
+
+def init_db_object(conf_file):
+    # 获取数据库对象
+    try:
+        global DB_OBJECT
+        db_conf = configobj.ConfigObj(conf_file)
+        db_type = db_conf['common']['DB_TYPE']
+        if db_type == 'mysql':
+            DB_OBJECT = CommonMysqlDB(conf_file)
+        elif db_type == 'oracle':
+            pass
+    except:
+        print traceback.print_exc()
+
+def get_db_connection():
+    conn = None
+    if DB_OBJECT:
+        conn = DB_OBJECT.get_connection()
+    return conn
+
 
 if __name__ == "__main__":
     logger.info("========[Start UPLOADING]========")
