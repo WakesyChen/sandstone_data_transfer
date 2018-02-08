@@ -1,55 +1,55 @@
 # -*- coding:utf-8 -*-
-import re
-import sys
-import boto
-import socket
-import os.path
+import commands
 import datetime
 import hashlib
-import signal
 import os
+import os.path
+import socket
+import sys
 import traceback
-import cx_Oracle
+import configobj
+import boto
 import boto.s3
 import boto.s3.connection
-from boto.s3.key import Key
 from config import *
-from util import logger, log_file_path
 from optparse import OptionParser
+from db.mysql_db import CommonMysqlDB
+from db.oracle_db import CommonOracleDB
 from multiupload import upload_file_multipart
-import configobj
-from common_mysql_db import CommonMysqlDB
+from util import logger
 reload(sys) 
 sys.setdefaultencoding('gbk')
 
-ORACLE_CONNECTION = None
-ORACLE_CURSOR = None
-UPLOAD_DIR = DEFAULT_UPLOAD_DIR
+"""
+三、脚本说明------最后检查，是否都已上传到MOS
+    检查指定路径下的文件，通过查询数据库的记录，打印出没有上传到MOS的文件
+"""
+
+
+# S3配置
 BUCKET_PREF = ""
-IS_MOVE = False
-CONN = None
-DB_OBJECT = None  # 数据库对象
+S3_CONN = None
+UPLOAD_DIR = DEFAULT_UPLOAD_DIR
 
-def init_db_connection():
-    try:
-        global ORACLE_CONNECTION
-        global ORACLE_CURSOR
-        ORACLE_CONNECTION = cx_Oracle.connect(ORACLE_USER, ORACLE_PASSWORD, '%s:%s/%s'%(ORACLE_SERVER_IP, ORACLE_SERVER_PORT, ORACLE_DBNAME))
-        ORACLE_CURSOR = ORACLE_CONNECTION.cursor()
 
-        return True
-    except Exception,e:
-        logger.critical("Connect Oracle DB failed: %s"%str(traceback.format_exc()))
-        return False
+# 数据库配置
+db_instance = None
+db_connection = None
+db_type = None
+db_conf = DEFAULT_DB_CONF
+db_table = DEFAULT_DB_TABLE
+
+#==========================S3相关操作==========================
 
 def init_s3_connection():
     try:
-        global AWS_ACCESS_KEY_ID, AWS_ACCESS_KEY_SECRET, HOST, PORT, CONN
-        CONN = get_connection(AWS_ACCESS_KEY_ID, AWS_ACCESS_KEY_SECRET, HOST, PORT)
+        global AWS_ACCESS_KEY_ID, AWS_ACCESS_KEY_SECRET, HOST, PORT, S3_CONN
+        S3_CONN = get_s3_connection(AWS_ACCESS_KEY_ID, AWS_ACCESS_KEY_SECRET, HOST, PORT)
         return True
     except Exception,e:
-        logger.critical("Connect s3 failed: %s"%str(e))
+        logger.critical("init_s3_connection s3 failed: %s" % str(e))
         return False
+
 
 def GetFileMd5(filename):
     if not os.path.isfile(filename):
@@ -64,6 +64,7 @@ def GetFileMd5(filename):
     f.close()
     return myhash.hexdigest()
 
+
 def get_hostname_and_ipaddr():
     try:
         hostname = socket.gethostname()
@@ -77,15 +78,15 @@ def get_hostname_and_ipaddr():
         return "PADDING", "PADDING"
 
 
-def get_connection(access_key, secret_key, host, port):
-    conn = boto.connect_s3(
+def get_s3_connection(access_key, secret_key, host, port):
+    S3_CONN = boto.connect_s3(
         aws_access_key_id=access_key,
         aws_secret_access_key=secret_key,
         host=host,
         port=port,
         is_secure=False,
         calling_format=boto.s3.connection.OrdinaryCallingFormat(),)
-    return conn
+    return S3_CONN
 
  
 def iterate_over_directory_process(source_path, processor):
@@ -102,7 +103,9 @@ def iterate_over_directory_process(source_path, processor):
             new_path=os.path.join(source_path,subfile)
             iterate_over_directory_process(new_path, processor)
 
+
 def upload_file_to_s3(cloud_path, file_path):
+
     if is_file_uploaded(cloud_path):
         logger.info("File: %s has already been uploaded, go on for next file!", cloud_path)
         return True
@@ -110,7 +113,7 @@ def upload_file_to_s3(cloud_path, file_path):
     md5id = GetFileMd5(file_path)
     try:
         global BUCKET_PREF
-        bucket = CONN.get_bucket(BUCKET_NAME, validate=False)
+        bucket = S3_CONN.get_bucket(BUCKET_NAME, validate=False)
         object_path = cloud_path.replace("\\", "/")
 
         if object_path[0] == '/':
@@ -125,19 +128,17 @@ def upload_file_to_s3(cloud_path, file_path):
             logger.info("SUCCESS: multipart way, uploading destination object path: %s"%object_path)
         else:
             kobject.set_contents_from_filename(file_path, headers={'CONTENT-MD5' : md5id})
-            # logger.info("SUCCESS: singlefile way, uploading destination object path: %s"%object_path)
             logger.info("SUCCESS: singlefile way, uploading destination file path: %s"%file_path)
-
+        # 插入记录到数据库
         insert_file_record_to_db(cloud_path,  file_path)
 
     except Exception,e:
-        CONN.close()
+        S3_CONN.close()
         logger.error("FAILURE: upload cloud_path: %s ,error: %s" % (cloud_path, str(e)))
         collect_failed_files(file_path, UPLOAD_MOS_FAILED_LOG)
         return False
 
     return True
-
 
 
 def collect_failed_files(file_path, failed_log):
@@ -148,46 +149,61 @@ def collect_failed_files(file_path, failed_log):
     import  commands
     if os.path.isfile(file_path):
         try:
-            grep_cmd = "echo '{}' >> {}".format(file_path, failed_log)
-            ret_code, result = commands.getoutput(grep_cmd)
+            add_failed_file = "echo '{}' >> {}".format(file_path, failed_log)
+            ret_code, result = commands.getoutput(add_failed_file)
             if ret_code != 0:
                 logger.error("FAILUER: Write failed file path [{0}] to [{1}] failed!".format(file_path, failed_log))
         except:
-            logger.error(traceback.format_exc())
+            logger.error("Executing cmd Failed:%s" % add_failed_file)
+            logger.error(traceback.print_exc())
 
+
+#==========================数据库相关操作======================
+
+def init_db_connection():
+    """根据配置文件，初始化选择数据库，以及对应的方法"""
+    global db_type, db_instance, db_connection
+    try:
+        db_conf_obj = configobj.ConfigObj(db_conf)
+        db_type = db_conf_obj['common']['DB_TYPE']
+
+        if db_type == 'oracle':
+            db_instance = CommonOracleDB(db_conf)
+        elif db_type == 'mysql':
+            db_instance = CommonMysqlDB(db_conf)
+        else:
+            logger.error("Init db_S3_CONNection failed!,invalid DB_TYPE!")
+            return False
+        db_connection = db_instance.get_connection() # 创建数据库连接
+        if db_connection:
+            return True
+    except:
+        logger.critical(traceback.print_exc())
+    return False
+
+
+def check_all_file_uploads(cloud_path, file_path):
+    if not is_file_uploaded(cloud_path):
+        logger.critical("***Not Uploaded File: [%s]" % file_path)
 
 
 def is_file_uploaded(cloudpath):
-    try:
-        query_sql = "select * from NAS_FILE_UPLOAD_STATUS  where CLOUDPATH='%s'"%cloudpath
-        ORACLE_CURSOR.execute(query_sql)
-        row_list = ORACLE_CURSOR.fetchall()
-        if len(row_list) == 0:
-            logger.debug("Not uploaded, file: %s", cloudpath)
-            return False
+    '''查询数据库上传记录，根据结果数目，判断文件是否上传'''
+    cols = ["CLOUDPATH"] # 待查询的列
+    where = "CLOUDPATH = '%s' " % cloudpath
+    query_count = db_instance.select_count(cols=cols, table=db_table, where=where)
+    return True if query_count > 0 else False
 
-        logger.debug("UPLOADED file: %s",  cloudpath)
-        return True
-    except Exception,e:
-        logger.critical("Query db error: %s" % str(e))
-        return False
 
-def add_record_to_oracle_db(datainfo, fullpath):
-    try:
-        # 多了两个字段？ :isuploaded, :isdelete
-        # insert_sql = "INSERT INTO NAS_FILE_UPLOAD_STATUS VALUES(:filename, :fulluploadpath, :cloudpath, :hostname, :uploadip, :uploadtime, :md5id, :isuploaded, :isdelete)"
-        insert_sql = "INSERT INTO NAS_FILE_UPLOAD_STATUS VALUES(:filename, :fulluploadpath, :cloudpath, :hostname, :uploadip, :uploadtime, :md5id)"
+def add_record_to_db(datainfo, fullpath):
+    '''上传到S3成功后，添加记录到数据库中'''
+    insert_success = db_instance.insert_data(db_table, datainfo)
 
-        ORACLE_CURSOR.execute(insert_sql, datainfo)
-        ORACLE_CONNECTION.commit()
-        return True
-    except Exception,e:
-        # BUGFIX:
-
-        logger.critical("Insert db error: %s, datainfo: %s" % (str(e), str(datainfo)))
-        # 插入失败，保存失败文件路径到指定日志
+    if not insert_success:
+        # 没有插入成功，加入失败文件列表
         collect_failed_files(fullpath, UPLOAD_ORACLE_FAILED_LOG)
-        return False
+    return insert_success
+
 
 def insert_file_record_to_db(cloud_path, fullpath):
     global BUCKET_PREF
@@ -200,48 +216,30 @@ def insert_file_record_to_db(cloud_path, fullpath):
     else:
         cloud_path = BUCKET_PREF + '/' + cloud_path
     try:
+
         datainfo = {}
         datainfo['filename'] = fullpath.split('/')[-1]
-        datainfo['fulluploadpath'] = fullpath
+        datainfo['fullsourcepath'] = fullpath
         datainfo['cloudpath'] = cloud_path
-        datainfo['hostname'] = hostname
+        datainfo['uploadhostname'] = hostname
         datainfo['uploadip'] = ipaddr
         datainfo['uploadtime'] = str(datetime.datetime.now())
         datainfo['md5id'] = GetFileMd5(fullpath)
-        if add_record_to_oracle_db(datainfo, fullpath):
-            logger.info("SUCCESS: insert file to oralce db: %s" % fullpath)
+        if add_record_to_db(datainfo, fullpath):
+            logger.info("SUCCESS: insert file to db: %s" % fullpath)
 
     except Exception,e:
         logger.error("FAILURE: insert file record error: %s, file: %s" % (str(e), fullpath))
         # 插入失败，保存失败文件路径到指定日志
         collect_failed_files(fullpath, UPLOAD_ORACLE_FAILED_LOG)
         return False
-
     return True
+
 
 def ensure_table_created():
-    # 文件名  源文件全路径   对象存储路径  上传节点主机名  上传节点IP    MD5
-    create_sql = """CREATE TABLE NAS_FILE_UPLOAD_STATUS
-                (FILENAME           VARCHAR2(1024),\
-                 FULLSOURCEPATH     VARCHAR2(3600),\
-                 CLOUDPATH          VARCHAR2(3600) primary key,\
-                 UPLOADHOSTNAME     VARCHAR2(256),\
-                 UPLOADIP           VARCHAR2(128),\
-                 UPLOADTIME         VARCHAR2(128),\
-                 MD5ID              VARCHAR2(128)\
-                 )"""
+    return db_instance.ensure_table_created(db_table)
 
-    try:
-        ORACLE_CURSOR.execute(create_sql)
-        ORACLE_CONNECTION.commit()
-    except Exception,e:
-        if "ORA-00955" not in str(e):
-            logger.error("FAILURE: create table: %s, error: %s"%("NAS_FILE_UPLOAD_STATUS", str(e)) )
-            return False
-
-    return True
-
-
+#==========================公共方法==========================
 
 def get_user_paras():
     try:
@@ -287,39 +285,10 @@ def get_user_paras():
         print("exception :{0}".format(str(ex)))
         return None
 
-def test_work(test1, test2):
-    #print ("cloud path:%s , source path: %s" % (test1, test2))
-    pass
-
-
-def init_log(*logfiles):
-    import commands
-    for log in logfiles:
-        commands.getoutput('cat /dev/null > %s' % log)
-        logger.info("Empty %s finished!" % log)
-
-def init_db_object(conf_file):
-    # 获取数据库对象
-    try:
-        global DB_OBJECT
-        db_conf = configobj.ConfigObj(conf_file)
-        db_type = db_conf['common']['DB_TYPE']
-        if db_type == 'mysql':
-            DB_OBJECT = CommonMysqlDB(conf_file)
-        elif db_type == 'oracle':
-            pass
-    except:
-        print traceback.print_exc()
-
-def get_db_connection():
-    conn = None
-    if DB_OBJECT:
-        conn = DB_OBJECT.get_connection()
-    return conn
 
 
 if __name__ == "__main__":
-    logger.info("========[Start UPLOADING]========")
+    logger.critical("========[Start to Check]========")
     try:
         user_paras = get_user_paras()
         if user_paras is None:
@@ -336,26 +305,18 @@ if __name__ == "__main__":
             sys.exit(3)
 
         if not ensure_table_created():
-            logger.critical("Oracle db not exists and create failed!")
+            logger.critical("DB does not exist and create failed!")
             sys.exit(4)
 
         if not init_s3_connection():
             sys.exit(5)
 
-        # 清空之前记录失败文件的日志
-        init_log(UPLOAD_MOS_FAILED_LOG, UPLOAD_ORACLE_FAILED_LOG )
-        # 开始遍历目录下的文件，执行上传到S3和记录到ORACLE
-        iterate_over_directory_process(UPLOAD_DIR, upload_file_to_s3)
-
-    except Exception,e:
-        logger.error("Error: %s", e)
+        iterate_over_directory_process(UPLOAD_DIR, check_all_file_uploads)
+        logger.critical("========[Check Finished!]========")
+    except :
+        logger.critical("Error:{}".format(traceback.print_exc()))
     finally:
-        if ORACLE_CURSOR:
-            ORACLE_CURSOR.close ()
-        if ORACLE_CONNECTION:
-            ORACLE_CONNECTION.close ()
-        if CONN:
-            CONN.close ()
+        if S3_CONN:
+            S3_CONN.close ()
 
-
-    logger.info("========[Exit UPLOADING]========")
+    logger.critical("========[Exit Checking]========")
