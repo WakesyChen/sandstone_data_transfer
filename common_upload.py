@@ -296,7 +296,6 @@ if __name__ == "__main__":
         if not user_paras:
             sys.exit(0)
 
-        global UPLOAD_DIR, BUCKET_NAME
         UPLOAD_DIR = user_paras['local_path']
         BUCKET_NAME = user_paras['bucket_name']
 
