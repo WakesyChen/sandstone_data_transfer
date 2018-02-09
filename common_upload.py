@@ -82,7 +82,7 @@ def iterate_over_directory_process(source_path, processor):
     '''
     iterate over source_path,and process files with function: processor
     '''
-    new_path = source_path
+    # new_path = source_path
     if os.path.isfile(source_path):
         cloud_path = source_path[len(UPLOAD_DIR):]
         processor(cloud_path, source_path)
@@ -114,16 +114,16 @@ def upload_file_to_s3(cloud_path, file_path):
         filesize = os.stat(file_path).st_size
         if filesize >= MULTI_UPLOAD_THRESHOLD_SIZE:
             upload_file_multipart(file_path, object_path, bucket, md5id)
-            logger.info("SUCCESS: multipart way, uploading destination object path: %s"%object_path)
+            logger.info("SUCCESS to S3: multipart way, uploading destination object path: %s"%object_path)
         else:
             kobject.set_contents_from_filename(file_path, headers={'CONTENT-MD5' : md5id})
-            logger.info("SUCCESS: singlefile way, uploading destination file path: %s"%file_path)
+            logger.info("SUCCESS to S3: singlefile way, uploading destination file path: %s"%file_path)
         # 插入记录到数据库
         insert_file_record_to_db(cloud_path,  file_path)
 
     except Exception,e:
         S3_CONN.close()
-        logger.error("FAILURE: upload cloud_path: %s ,error: %s" % (cloud_path, str(e)))
+        logger.error("FAILURE to S3 : upload cloud_path: %s ,error: %s" % (cloud_path, str(e)))
         collect_failed_files(file_path, UPLOAD_MOS_FAILED_LOG)
         return False
 
@@ -149,16 +149,13 @@ def collect_failed_files(file_path, failed_log):
     :param failed_log: 记录上传失败的文件日志路径
     :param file_path: 上传失败的文件路径
     '''
-    import  commands
     if os.path.isfile(file_path):
         try:
             add_failed_file = "echo '{}' >> {}".format(file_path, failed_log)
             ret_code, result = commands.getoutput(add_failed_file)
-            if ret_code != 0:
-                logger.error("FAILUER: Write failed file path [{0}] to [{1}] failed!".format(file_path, failed_log))
-        except:
-            logger.error("Executing cmd Failed:%s" % add_failed_file)
-            logger.error(traceback.print_exc())
+            assert ret_code == 0, "Writing path [{0}] to [{1}] failed!".format(file_path, failed_log)
+        except Exception, error:
+            logger.error("***collect_failed_files, error_msg:[%s]" % error)
 
 
 #==========================数据库相关操作======================
@@ -175,13 +172,13 @@ def init_db_connection():
         elif db_type == 'mysql':
             db_instance = CommonMysqlDB(db_conf)
         else:
-            logger.error("Init db_S3_CONNection failed!,invalid DB_TYPE!")
+            logger.error("init_db_connection failed, invalid DB_TYPE:%s" % db_type)
             return False
         db_connection = db_instance.get_connection() # 创建数据库连接
         if db_connection:
             return True
-    except:
-        logger.critical(traceback.print_exc())
+    except Exception, error:
+        logger.critical("init_db_connection failed, error:[%s]" % error)
     return False
 
 
@@ -279,8 +276,8 @@ def get_user_paras():
                 print(error_message)
                 opt.print_help()
             return None
-    except Exception as ex:
-        print("exception :{0}".format(str(ex)))
+    except Exception, error:
+        logger.info("get_user_paras error_msg:{0}".format(error))
         return None
 
 
@@ -315,12 +312,12 @@ if __name__ == "__main__":
             sys.exit(5)
 
         # 清空之前记录失败文件的日志
-        init_log(UPLOAD_MOS_FAILED_LOG, UPLOAD_ORACLE_FAILED_LOG )
+        init_log(UPLOAD_MOS_FAILED_LOG, UPLOAD_ORACLE_FAILED_LOG)
         # 开始遍历目录下的文件，执行上传到S3和记录到数据库
         iterate_over_directory_process(UPLOAD_DIR, upload_file_to_s3)
         logger.critical("========[Upload finished!]========")
-    except :
-        logger.critical("Error:{}".format(traceback.print_exc()))
+    except Exception, error:
+        logger.critical("Executing script error_msg:{}".format(error))
     finally:
         if S3_CONN:
             S3_CONN.close ()

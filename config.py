@@ -36,8 +36,8 @@ BUCKET_NAME = 'test'
 #===========================其他==========================================
 
 # 本地待上传目录，注意windows的反斜杠需要换位linux格式的正斜杠
-DEFAULT_UPLOAD_DIR = "/var/lib/sdsom/venv/lib/python2.7/site-packages/sdsom-core-py2.7.egg/sdsom"
-# DEFAULT_UPLOAD_DIR = "/opt/complex_dir"
+# DEFAULT_UPLOAD_DIR = "/var/lib/sdsom/venv/lib/python2.7/site-packages/sdsom-core-py2.7.egg/sdsom"
+DEFAULT_UPLOAD_DIR = "/opt/complex_dir"
 # 日志目录
 LOG_DIR = "./log/"
 # 日志文件前缀（后缀是日期，格式：upload_files_to_MOS.log2017-06-23-20-14）

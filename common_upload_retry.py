@@ -21,7 +21,7 @@ reload(sys)
 sys.setdefaultencoding('gbk')
 
 """
-二、脚本说明--------尝试重传上次上传失败的文件
+二、脚本说明--------第二次，尝试重传上次上传失败的文件
     读取上次保存的，上传到s3和数据库失败文件的两个日志,重新上传
 """
 
@@ -45,8 +45,8 @@ def init_s3_connection():
         global AWS_ACCESS_KEY_ID, AWS_ACCESS_KEY_SECRET, HOST, PORT, S3_CONN
         S3_CONN = get_s3_connection(AWS_ACCESS_KEY_ID, AWS_ACCESS_KEY_SECRET, HOST, PORT)
         return True
-    except Exception,e:
-        logger.critical("init_s3_connection s3 failed: %s" % str(e))
+    except Exception,error:
+        logger.critical("init_s3_connection s3 failed: %s" % str(error))
         return False
 
 
@@ -72,8 +72,8 @@ def get_hostname_and_ipaddr():
         ipaddr = ip_info[2][0]
         logger.debug("local ip addr: %s"%ipaddr)
         return hostname, ipaddr
-    except Exception,e:
-        logger.critical("get hostname ip error: %s" % str(e))
+    except Exception,error:
+        logger.critical("get hostname ip error: %s" % str(error))
         return "PADDING", "PADDING"
 
 
@@ -131,9 +131,9 @@ def upload_file_to_s3(cloud_path, file_path):
         # 插入记录到数据库
         insert_file_record_to_db(cloud_path,  file_path)
 
-    except Exception,e:
+    except Exception,error:
         S3_CONN.close()
-        logger.error("FAILURE: upload cloud_path: %s ,error: %s" % (cloud_path, str(e)))
+        logger.error("FAILURE: upload cloud_path: %s ,error: %s" % (cloud_path, str(error)))
         collect_failed_files(file_path, REUPLOAD_FAILED_LOG)
         return False
 
@@ -145,16 +145,13 @@ def collect_failed_files(file_path, failed_log):
     :param failed_log: 记录上传失败的文件日志路径
     :param file_path: 上传失败的文件路径
     '''
-    import  commands
     if os.path.isfile(file_path):
         try:
             add_failed_file = "echo '{}' >> {}".format(file_path, failed_log)
             ret_code, result = commands.getoutput(add_failed_file)
-            if ret_code != 0:
-                logger.error("FAILUER: Write failed file path [{0}] to [{1}] failed!".format(file_path, failed_log))
-        except:
-            logger.error("Executing cmd Failed:%s" % add_failed_file)
-            logger.error(traceback.print_exc())
+            assert ret_code == 0, "Writing path [{0}] to [{1}] failed!".format(file_path, failed_log)
+        except Exception, error:
+            logger.error("***collect_failed_files, error_msg:[%s]" % error)
 
 
 def reupload_failed_files():
@@ -180,8 +177,10 @@ def reupload_failed_files():
                         logger.info("***Invalid file path:[{}]".format(failed_file))
                         # 读出的不是文件路径，则读取下一条
                         continue
-        except:
-            logger.error("***Upload [%s] failed, error: %s" % (failed_file, traceback.format_exc()))
+                # 全部读完后，清空上次失败文件的内容
+                init_log(UPLOAD_MOS_FAILED_LOG, UPLOAD_ORACLE_FAILED_LOG)
+        except Exception, error:
+            logger.error("***Upload [%s] failed, error: %s" % (failed_file, error))
 
 #==========================数据库相关操作======================
 
@@ -197,13 +196,13 @@ def init_db_connection():
         elif db_type == 'mysql':
             db_instance = CommonMysqlDB(db_conf)
         else:
-            logger.error("Init db_S3_CONNection failed!,invalid DB_TYPE!")
+            logger.error("init_db_connection failed, invalid DB_TYPE:%s" % db_type)
             return False
         db_connection = db_instance.get_connection() # 创建数据库连接
         if db_connection:
             return True
-    except:
-        logger.critical(traceback.print_exc())
+    except Exception, error:
+        logger.critical("init_db_connection failed, error:[%s]" % error)
     return False
 
 
@@ -218,10 +217,9 @@ def is_file_uploaded(cloudpath):
 def add_record_to_db(datainfo, fullpath):
     '''上传到S3成功后，添加记录到数据库中'''
     insert_success = db_instance.insert_data(db_table, datainfo)
-
     if not insert_success:
-        # 没有插入成功，加入失败文件列表
-        collect_failed_files(fullpath, UPLOAD_ORACLE_FAILED_LOG)
+        # 没有插入成功，加入重传失败文件列表
+        collect_failed_files(fullpath, REUPLOAD_FAILED_LOG)
     return insert_success
 
 
@@ -248,7 +246,8 @@ def insert_file_record_to_db(cloud_path, fullpath):
         if add_record_to_db(datainfo, fullpath):
             logger.info("SUCCESS: insert file to db: %s" % fullpath)
 
-    except Exception,e:
+
+    except Exception,error:
         logger.error("FAILURE: insert file record error: %s, file: %s" % (str(e), fullpath))
         # 插入失败，保存失败文件路径到指定日志
         collect_failed_files(fullpath, REUPLOAD_FAILED_LOG)
@@ -301,8 +300,8 @@ def get_user_paras():
                 print(error_message)
                 opt.print_help()
             return None
-    except Exception as ex:
-        print("exception :{0}".format(str(ex)))
+    except Exception, error:
+        logger.info("get_user_paras error_msg:{0}".format(error))
         return None
 
 
@@ -341,8 +340,8 @@ if __name__ == "__main__":
         # 开始读取上次上传到s3和oracle，失败文件的两个日志,重新上传
         reupload_failed_files()
         logger.critical("========[ReUpload finished!]========")
-    except :
-        logger.critical("Error:{}".format(traceback.print_exc()))
+    except Exception, error:
+        logger.critical("Executing script error_msg:{}".format(error))
     finally:
         if S3_CONN:
             S3_CONN.close ()

@@ -13,7 +13,7 @@ if not os.path.exists(LOG_DIR):
     os.mkdir(LOG_DIR)
 
 # create formatter
-fmtstr = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+fmtstr = '%(asctime)s[%(levelname)s]  %(message)s'
 formatter = logging.Formatter(fmtstr)
 
 logging.basicConfig(format=fmtstr, filename=log_file_path, datefmt='%a, %d %b %Y %H:%M:%S')

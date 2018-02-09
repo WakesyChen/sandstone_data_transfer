@@ -42,7 +42,7 @@ class CommonOracleDB(BaseDB):
             time_start = time.time()
             function = func(*args, **kwargs)
             time_end = time.time() - time_start
-            logger.info("Excuting [%s] spent %0.5f seconds." % (str(func.__name__), time_end))
+            logger.critical(">>>>>Excuting [%s] spent %0.5f seconds." % (str(func.__name__), time_end))
             return function
 
         return inner
@@ -58,8 +58,8 @@ class CommonOracleDB(BaseDB):
                 self.cursor = self.connection.cursor()  # 公共cursor
             else:
                 logger.error("Create db connection failed! DB config information is not correct!")
-        except:
-            logger.critical(traceback.print_exc())
+        except Exception , error:
+            logger.critical("***Building oracle connection failed,error_msg:[%s]" % error)
 
     def get_connection(self):
         return self.connection
@@ -86,10 +86,10 @@ class CommonOracleDB(BaseDB):
                 self.connection.commit()
             else:
                 logger.error("Oracle connection hasn\'t been established!")
-        except Exception, e:
+        except Exception, error:
 
-            if "ORA-00955" not in str(e):
-                logger.error("FAILURE: create table NAS_FILE_UPLOAD_STATUS")
+            if "ORA-00955" not in str(error):
+                logger.error("***Create table [%s] failed,error_msg:[%s]" % (table, error))
                 return False
         return True
 
@@ -110,8 +110,8 @@ class CommonOracleDB(BaseDB):
                 return True
             else:
                 logger.error("Inserting data Failed! Mysql connection hasn\'t been established!")
-        except:
-            logger.critical("Insert data to db error:{}".format(traceback.print_exc()))
+        except Exception , error:
+            logger.critical("***Inserting data to [%s] Failed:[%s]" % (table, error))
         return False
 
     def select_count(self, cols=[], table='', where=''):
@@ -132,8 +132,8 @@ class CommonOracleDB(BaseDB):
                 item = cursor.fetchone()
                 if item:
                     count = 1
-        except:
-            logger.critical("Query db error: {}".format(traceback.print_exc()))
+        except Exception , error:
+            logger.critical("***Selecting count failed! error_msg: [{}]".format(error))
         return count
 
     @count_time
@@ -156,8 +156,8 @@ class CommonOracleDB(BaseDB):
                 results = cursor.fetchall()
             else:
                 logger.error("Mysql connection hasn\'t been established!")
-        except Exception as err:
-            logger.error("***Selecting data failed! error_msg:%s" % err)
+        except Exception , error:
+            logger.error("***Selecting data failed! error_msg:%s" % error)
         return results
 
 

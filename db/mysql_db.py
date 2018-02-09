@@ -38,7 +38,7 @@ class CommonMysqlDB(BaseDB):
             time_start = time.time()
             function = func(*args, **kwargs)
             time_end = time.time() - time_start
-            logger.info("Excuting [%s] spent %0.5f seconds." % (str(func.__name__), time_end))
+            logger.critical(">>>>>Excuting [%s] spent %0.5f seconds." % (str(func.__name__), time_end))
             return function
 
         return inner
@@ -55,7 +55,7 @@ class CommonMysqlDB(BaseDB):
             clo_values_foramt_str = ','.join(['"%s"' % value for value in clo_values])
             return clo_values_foramt_str
         except:
-            logger.critical("Formatting table colomn values failed!")
+            logger.critical("***Formatting table colomn values failed!")
             return ''
 
     @count_time
@@ -68,8 +68,8 @@ class CommonMysqlDB(BaseDB):
                                                   passwd=self.db_info['passwd'], db=self.db_info['db_name'],
                                                   charset='utf8')
                 self.cursor = self.connection.cursor()  # 创建一个公共cursor
-        except:
-            logger.critical(traceback.print_exc())
+        except Exception, error:
+            logger.critical("***Building mysql connection failed,error_msg:[%s]" % error)
 
     def get_connection(self):
         '''对外提供的获取connection方法'''
@@ -100,8 +100,8 @@ class CommonMysqlDB(BaseDB):
                 return True
             else:
                 logger.error("Mysql connection hasn\'t been established!")
-        except:
-            logger.critical("***Creating table %s failed! ,error:{}".format(traceback.format_exc()))
+        except Exception, error:
+            logger.critical("***Creating table %s failed! ,error:[{}]".format(error))
         return False
 
     def insert_data(self, table, datainfo):
@@ -114,7 +114,7 @@ class CommonMysqlDB(BaseDB):
             if not values_str:  # 格式化插入的数据失败，则插入失败
                 return False
             insert_sql = "INSERT INTO %s  VALUES (%s) ;" % (table, values_str)  # 拼接插入语句
-            logger.info("insert_sql:%s" % insert_sql)
+            logger.debug("insert_sql:%s" % insert_sql)
 
             conn = self.connection
             if conn:
@@ -125,8 +125,8 @@ class CommonMysqlDB(BaseDB):
                 return True
             else:
                 logger.error("Mysql connection hasn\'t been established!")
-        except:
-            logger.critical(traceback.print_exc())
+        except Exception, error:
+            logger.critical("***Inserting data to [%s] Failed:[%s]" % (table, error))
         return False
 
     def select_count(self, cols=[], table='', where=''):
@@ -147,8 +147,8 @@ class CommonMysqlDB(BaseDB):
                 count = cursor.execute(select_sql)
             else:
                 logger.error("Mysql connection hasn\'t been established!")
-        except:
-            logger.critical(traceback.print_exc())
+        except Exception, error:
+            logger.critical("***Select count failed! error_msg: [{}]".format(error))
         return count
 
     @count_time
@@ -159,27 +159,21 @@ class CommonMysqlDB(BaseDB):
         :param where: 待查询的条件，如："name = 'Wakesy' and age > 23"
         :return:
         '''
-        cursor = None
         results = None
         try:
             cols_str = ','.join(cols)
-            select_sql = "SELECT %s FROM %s ;" % (cols_str, table)
-            if where:
-                select_sql = select_sql.replace(';', 'WHERE ') + where + ";"
-            print select_sql
+            select_sql = "SELECT %s FROM %s WHERE %s ;" % (cols_str, table, where)
+            logger.debug("select_sql:%s" % select_sql)
             conn = self.connection
             if conn:
-                cursor = self.cursor if self.cursor else conn.cursor()
+                cursor = conn.cursor()
                 count = cursor.execute(select_sql)
-                print "select count is %s" % count
+                logger.debug("select count is %s" % count)
                 results = cursor.fetchall()
-                for item in results:
-                    print item
             else:
-                print "Mysql connection hasn\'t been established!"
-        except:
-            print "***Selecting data failed!"
-            print traceback.print_exc()
+                logger.critical("***Mysql connection hasn\'t been established!")
+        except Exception, error:
+                logger.critical("***Select data failed! error_msg: [{}]".format(error))
         finally:
             return results
 
