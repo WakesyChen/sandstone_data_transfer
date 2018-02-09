@@ -38,7 +38,7 @@ db_instance = None
 db_connection = None
 db_type = None
 db_conf = DEFAULT_DB_CONF
-db_table = DEFAULT_DB_TABLE
+db_table = None
 
 
 
@@ -162,20 +162,22 @@ def collect_failed_files(file_path, failed_log):
 
 def init_db_connection():
     """根据配置文件，初始化选择数据库，以及对应的方法"""
-    global db_type, db_instance, db_connection
+    global db_type, db_instance, db_connection, db_table
     try:
         db_conf_obj = configobj.ConfigObj(db_conf)
         db_type = db_conf_obj['common']['DB_TYPE']
 
         if db_type == 'oracle':
             db_instance = CommonOracleDB(db_conf)
+            db_table = db_conf_obj['oracle']['DEFAULT_TABLE']
         elif db_type == 'mysql':
             db_instance = CommonMysqlDB(db_conf)
+            db_table = db_conf_obj['mysql']['DEFAULT_TABLE']
         else:
             logger.error("init_db_connection failed, invalid DB_TYPE:%s" % db_type)
             return False
-        db_connection = db_instance.get_connection() # 创建数据库连接
-        if db_connection:
+
+        if db_instance.get_connection(): # 创建数据库连接
             return True
     except Exception, error:
         logger.critical("init_db_connection failed, error:[%s]" % error)
@@ -291,9 +293,10 @@ if __name__ == "__main__":
     logger.critical("========[Start to Upload]========")
     try:
         user_paras = get_user_paras()
-        if user_paras is None:
+        if not user_paras:
             sys.exit(0)
 
+        global UPLOAD_DIR, BUCKET_NAME
         UPLOAD_DIR = user_paras['local_path']
         BUCKET_NAME = user_paras['bucket_name']
 
@@ -315,6 +318,7 @@ if __name__ == "__main__":
         init_log(UPLOAD_MOS_FAILED_LOG, UPLOAD_ORACLE_FAILED_LOG)
         # 开始遍历目录下的文件，执行上传到S3和记录到数据库
         iterate_over_directory_process(UPLOAD_DIR, upload_file_to_s3)
+
         logger.critical("========[Upload finished!]========")
     except Exception, error:
         logger.critical("Executing script error_msg:{}".format(error))

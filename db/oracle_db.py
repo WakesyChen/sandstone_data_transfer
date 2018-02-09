@@ -37,12 +37,11 @@ class CommonOracleDB(BaseDB):
     def count_time(func):
         '''计算某个方法执行的时间
         '''
-
         def inner(*args, **kwargs):
             time_start = time.time()
             function = func(*args, **kwargs)
             time_end = time.time() - time_start
-            logger.critical(">>>>>Excuting [%s] spent %0.5f seconds." % (str(func.__name__), time_end))
+            logger.critical(">>>>>Excuting oracle [%s] spent %0.5f seconds." % (str(func.__name__), time_end))
             return function
 
         return inner
