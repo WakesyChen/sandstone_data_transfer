@@ -25,6 +25,7 @@ class CommonBaseDB(object):
         db_info['user'] = self.db_conf[self.db_type]['USER']
         db_info['passwd'] = self.db_conf[self.db_type]['PASSWORD']
         db_info['db_name'] = self.db_conf[self.db_type]['DB_NAME']
+        db_info['default_table'] = self.db_conf[self.db_type]['DEFAULT_TABLE']
         logger.info("db_info:%s" % db_info)
         return db_info
 
@@ -33,20 +34,20 @@ class CommonBaseDB(object):
         # 获取对应的数据库连接
         pass
 
-    def ensure_table_created(self, table):
+    def ensure_table_created(self):
         # 创建表方法
         pass
 
-    def insert_data(self, table, datainfo):
+    def insert_data(self, datainfo):
         # 插入数据
         pass
 
-    def select_count(self, cols=[], table='', where=''):
+    def select_count(self, cols=[], where=''):
         # 查询满足条件的数目
         pass
 
 
-    def select_normal(self, cols=[], table='', where=''):
+    def select_normal(self, cols=[], where=''):
         # 查询满足条件的项
         pass
 

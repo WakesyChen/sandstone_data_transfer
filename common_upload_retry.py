@@ -36,7 +36,6 @@ db_instance = None
 db_connection = None
 db_conf = DEFAULT_DB_CONF
 db_type = None
-db_table = None
 
 #============================S3相关操作========================
 
@@ -186,17 +185,15 @@ def reupload_failed_files():
 
 def init_db_connection():
     """根据配置文件，初始化选择数据库，以及对应的方法"""
-    global db_type, db_instance, db_connection, db_table
+    global db_type, db_instance, db_connection
     try:
         db_conf_obj = configobj.ConfigObj(db_conf)
         db_type = db_conf_obj['common']['DB_TYPE']
 
         if db_type == 'oracle':
             db_instance = CommonOracleDB(db_conf)
-            db_table = db_conf_obj['oracle']['DEFAULT_TABLE']
         elif db_type == 'mysql':
             db_instance = CommonMysqlDB(db_conf)
-            db_table = db_conf_obj['mysql']['DEFAULT_TABLE']
         else:
             logger.error("init_db_connection failed, invalid DB_TYPE:%s" % db_type)
             return False
@@ -212,13 +209,13 @@ def is_file_uploaded(cloudpath):
     '''查询数据库上传记录，根据结果数目，判断文件是否上传'''
     cols = ["CLOUDPATH"] # 待查询的列
     where = "CLOUDPATH = '%s' " % cloudpath
-    query_count = db_instance.select_count(cols=cols, table=db_table, where=where)
+    query_count = db_instance.select_count(cols=cols, where=where)
     return True if query_count > 0 else False
 
 
 def add_record_to_db(datainfo, fullpath):
     '''上传到S3成功后，添加记录到数据库中'''
-    insert_success = db_instance.insert_data(db_table, datainfo)
+    insert_success = db_instance.insert_data(datainfo)
     if not insert_success:
         # 没有插入成功，加入重传失败文件列表
         collect_failed_files(fullpath, REUPLOAD_FAILED_LOG)
@@ -250,7 +247,7 @@ def insert_file_record_to_db(cloud_path, fullpath):
 
 
     except Exception,error:
-        logger.error("FAILURE: insert file record error: %s, file: %s" % (str(e), fullpath))
+        logger.error("FAILURE: insert file record error: %s, file: %s" % (str(error), fullpath))
         # 插入失败，保存失败文件路径到指定日志
         collect_failed_files(fullpath, REUPLOAD_FAILED_LOG)
         return False
@@ -258,7 +255,7 @@ def insert_file_record_to_db(cloud_path, fullpath):
 
 
 def ensure_table_created():
-    return db_instance.ensure_table_created(db_table)
+    return db_instance.ensure_table_created()
 
 #==========================公共方法===========================
 

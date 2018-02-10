@@ -9,6 +9,8 @@
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../data_transfer_scripts_20180209/config.py" afterPath="$PROJECT_DIR$/../data_transfer_scripts_20180209/config.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../data_transfer_scripts_20180209/db/base_db.py" afterPath="$PROJECT_DIR$/../data_transfer_scripts_20180209/db/base_db.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../data_transfer_scripts_20180209/db/db.conf" afterPath="$PROJECT_DIR$/../data_transfer_scripts_20180209/db/db.conf" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../data_transfer_scripts_20180209/db/mysql_db.py" afterPath="$PROJECT_DIR$/../data_transfer_scripts_20180209/db/mysql_db.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../data_transfer_scripts_20180209/db/oracle_db.py" afterPath="$PROJECT_DIR$/../data_transfer_scripts_20180209/db/oracle_db.py" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -34,8 +36,8 @@
       <file leaf-file-name="common_upload.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/../data_transfer_scripts_20180209/common_upload.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="498">
-              <caret line="318" column="62" lean-forward="false" selection-start-line="318" selection-start-column="62" selection-end-line="318" selection-end-column="62" />
+            <state relative-caret-position="-399">
+              <caret line="0" column="0" lean-forward="true" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
               <folding />
             </state>
           </provider>
@@ -44,8 +46,8 @@
       <file leaf-file-name="common_upload_check.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/../data_transfer_scripts_20180209/common_upload_check.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="228">
-              <caret line="243" column="0" lean-forward="false" selection-start-line="243" selection-start-column="0" selection-end-line="243" selection-end-column="0" />
+            <state relative-caret-position="308">
+              <caret line="243" column="28" lean-forward="true" selection-start-line="243" selection-start-column="28" selection-end-line="243" selection-end-column="28" />
               <folding>
                 <element signature="e#23#38#0" expanded="true" />
               </folding>
@@ -56,11 +58,9 @@
       <file leaf-file-name="common_upload_retry.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/../data_transfer_scripts_20180209/common_upload_retry.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="556">
-              <caret line="295" column="0" lean-forward="true" selection-start-line="295" selection-start-column="0" selection-end-line="295" selection-end-column="0" />
-              <folding>
-                <element signature="e#23#38#0" expanded="true" />
-              </folding>
+            <state relative-caret-position="470">
+              <caret line="261" column="21" lean-forward="true" selection-start-line="261" selection-start-column="21" selection-end-line="261" selection-end-column="21" />
+              <folding />
             </state>
           </provider>
         </entry>
@@ -68,8 +68,8 @@
       <file leaf-file-name="db.conf" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/../data_transfer_scripts_20180209/db/db.conf">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="133">
-              <caret line="7" column="0" lean-forward="true" selection-start-line="7" selection-start-column="0" selection-end-line="7" selection-end-column="0" />
+            <state relative-caret-position="266">
+              <caret line="14" column="13" lean-forward="false" selection-start-line="14" selection-start-column="0" selection-end-line="14" selection-end-column="13" />
               <folding />
             </state>
           </provider>
@@ -78,8 +78,8 @@
       <file leaf-file-name="base_db.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/../data_transfer_scripts_20180209/db/base_db.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="254">
-              <caret line="16" column="17" lean-forward="false" selection-start-line="16" selection-start-column="17" selection-end-line="16" selection-end-column="17" />
+            <state relative-caret-position="513">
+              <caret line="27" column="32" lean-forward="false" selection-start-line="27" selection-start-column="8" selection-end-line="27" selection-end-column="32" />
               <folding>
                 <element signature="e#62#78#0" expanded="true" />
               </folding>
@@ -87,71 +87,38 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="mysql_db.py" pinned="false" current-in-tab="false">
+      <file leaf-file-name="mysql_db.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/../data_transfer_scripts_20180209/db/mysql_db.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-205">
-              <caret line="7" column="7" lean-forward="false" selection-start-line="7" selection-start-column="7" selection-end-line="7" selection-end-column="14" />
+            <state relative-caret-position="323">
+              <caret line="113" column="28" lean-forward="true" selection-start-line="113" selection-start-column="28" selection-end-line="113" selection-end-column="28" />
               <folding>
-                <element signature="n#!!doc" expanded="false" />
-                <element signature="e#252#447#0" expanded="false" />
-                <element signature="e#252#302#1" expanded="false" />
-                <element signature="e#480#725#0" expanded="false" />
-                <element signature="e#533#604#0" expanded="false" />
-                <element signature="e#646#725#0" expanded="false" />
-                <element signature="e#761#1105#0" expanded="false" />
-                <element signature="e#828#1083#0" expanded="false" />
-                <element signature="e#1155#1859#0" expanded="false" />
-                <element signature="e#1155#1426#1" expanded="false" />
-                <element signature="e#1452#1748#0" expanded="false" />
-                <element signature="e#1777#1859#0" expanded="false" />
-                <element signature="e#1917#2533#0" expanded="false" />
-                <element signature="e#1962#2410#0" expanded="false" />
-                <element signature="e#1995#2410#0" expanded="false" />
-                <element signature="e#2573#2629#0" expanded="false" />
-                <element signature="e#2682#3772#0" expanded="false" />
-                <element signature="e#2682#2789#1" expanded="false" />
-                <element signature="e#2866#3289#0" expanded="false" />
-                <element signature="e#3324#3632#0" expanded="false" />
-                <element signature="e#3384#3539#0" expanded="false" />
-                <element signature="e#3826#4731#0" expanded="false" />
-                <element signature="e#3826#3918#1" expanded="false" />
-                <element signature="e#3944#4591#0" expanded="false" />
-                <element signature="e#4284#4498#0" expanded="false" />
-                <element signature="e#4798#5585#0" expanded="false" />
-                <element signature="e#4798#4992#1" expanded="false" />
-                <element signature="e#5036#5446#0" expanded="false" />
-                <element signature="e#5248#5353#0" expanded="false" />
-                <element signature="e#5669#6588#0" expanded="false" />
-                <element signature="e#5669#5863#1" expanded="false" />
-                <element signature="e#5912#6423#0" expanded="false" />
-                <element signature="e#6148#6324#0" expanded="false" />
-                <element signature="e#6727#6939#0" expanded="false" />
-                <marker date="1518158847855" expanded="false" signature="2869:3286" ph="CREATE TABLE... IF" />
-                <marker date="1518158847855" expanded="false" signature="4093:4120" ph="INSERT INTO missing_value... " />
-                <marker date="1518158847855" expanded="false" signature="5088:5111" ph="SELECT missi... missing_value" />
-                <marker date="1518158847855" expanded="false" signature="5088:5112" ph="SELECT missi... missing_value" />
-                <marker date="1518158847855" expanded="false" signature="5964:5979" ph="SELECT missi... missing_value" />
-                <marker date="1518158847855" expanded="false" signature="5964:5987" ph="SELECT missi... missing_value" />
-                <marker date="1518158847855" expanded="false" signature="5964:5988" ph="SELECT missi... missing_value" />
+                <element signature="e#62#73#0" expanded="true" />
+                <marker date="1518229847053" expanded="true" signature="2933:3350" ph="CREATE TABLE... IF" />
+                <marker date="1518229847053" expanded="true" signature="4155:4182" ph="INSERT INTO missing_value... " />
+                <marker date="1518229847053" expanded="true" signature="5150:5173" ph="SELECT missi... missing_value" />
+                <marker date="1518229847053" expanded="true" signature="5150:5174" ph="SELECT missi... missing_value" />
+                <marker date="1518229847053" expanded="true" signature="6021:6036" ph="SELECT missi... missing_value" />
+                <marker date="1518229847053" expanded="true" signature="6021:6044" ph="SELECT missi... missing_value" />
+                <marker date="1518229847053" expanded="true" signature="6021:6045" ph="SELECT missi... missing_value" />
               </folding>
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="oracle_db.py" pinned="false" current-in-tab="true">
+      <file leaf-file-name="oracle_db.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/../data_transfer_scripts_20180209/db/oracle_db.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="973">
-              <caret line="161" column="0" lean-forward="true" selection-start-line="161" selection-start-column="0" selection-end-line="161" selection-end-column="0" />
+            <state relative-caret-position="-1826">
+              <caret line="6" column="16" lean-forward="true" selection-start-line="6" selection-start-column="16" selection-end-line="6" selection-end-column="16" />
               <folding>
-                <marker date="1518158862194" expanded="true" signature="2139:2577" ph="CREATE TABLE... IF" />
-                <marker date="1518158862194" expanded="true" signature="3301:3411" ph="INSERT INTO " />
-                <marker date="1518158862194" expanded="true" signature="4374:4398" ph="SELECT CLOUD... missing_value" />
-                <marker date="1518158862194" expanded="true" signature="5252:5267" ph="SELECT missi... missing_value" />
-                <marker date="1518158862194" expanded="true" signature="5252:5275" ph="SELECT missi... missing_value" />
-                <marker date="1518158862194" expanded="true" signature="5252:5276" ph="SELECT missi... missing_value" />
-                <marker date="1518158862194" expanded="true" signature="5252:5277" ph="SELECT missi... missing_value" />
+                <marker date="1518229859587" expanded="true" signature="2196:2634" ph="CREATE TABLE... IF" />
+                <marker date="1518229859587" expanded="true" signature="3361:3471" ph="INSERT INTO " />
+                <marker date="1518229859587" expanded="true" signature="4434:4458" ph="SELECT CLOUD... missing_value" />
+                <marker date="1518229859587" expanded="true" signature="5307:5322" ph="SELECT missi... missing_value" />
+                <marker date="1518229859587" expanded="true" signature="5307:5330" ph="SELECT missi... missing_value" />
+                <marker date="1518229859587" expanded="true" signature="5307:5331" ph="SELECT missi... missing_value" />
+                <marker date="1518229859587" expanded="true" signature="5307:5332" ph="SELECT missi... missing_value" />
               </folding>
             </state>
           </provider>
@@ -160,7 +127,7 @@
       <file leaf-file-name="config.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/../data_transfer_scripts_20180209/config.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-18">
+            <state relative-caret-position="365">
               <caret line="30" column="0" lean-forward="false" selection-start-line="30" selection-start-column="0" selection-end-line="30" selection-end-column="0" />
               <folding />
             </state>
@@ -244,14 +211,14 @@
         <option value="$PROJECT_DIR$/common_upload_check.py" />
         <option value="$PROJECT_DIR$/db/db.conf" />
         <option value="$PROJECT_DIR$/common_upload_retry.py" />
-        <option value="$PROJECT_DIR$/../data_transfer_scripts_20180209/db/mysql_db.py" />
-        <option value="$PROJECT_DIR$/../data_transfer_scripts_20180209/db/oracle_db.py" />
-        <option value="$PROJECT_DIR$/../data_transfer_scripts_20180209/common_upload.py" />
-        <option value="$PROJECT_DIR$/../data_transfer_scripts_20180209/common_upload_check.py" />
-        <option value="$PROJECT_DIR$/../data_transfer_scripts_20180209/common_upload_retry.py" />
         <option value="$PROJECT_DIR$/../data_transfer_scripts_20180209/db/db.conf" />
         <option value="$PROJECT_DIR$/../data_transfer_scripts_20180209/config.py" />
         <option value="$PROJECT_DIR$/../data_transfer_scripts_20180209/db/base_db.py" />
+        <option value="$PROJECT_DIR$/../data_transfer_scripts_20180209/common_upload.py" />
+        <option value="$PROJECT_DIR$/../data_transfer_scripts_20180209/common_upload_check.py" />
+        <option value="$PROJECT_DIR$/../data_transfer_scripts_20180209/common_upload_retry.py" />
+        <option value="$PROJECT_DIR$/../data_transfer_scripts_20180209/db/mysql_db.py" />
+        <option value="$PROJECT_DIR$/../data_transfer_scripts_20180209/db/oracle_db.py" />
       </list>
     </option>
   </component>
@@ -262,8 +229,7 @@
     <sorting>DEFINITION_ORDER</sorting>
   </component>
   <component name="ProjectFrameBounds" extendedState="7">
-    <option name="x" value="182" />
-    <option name="y" value="135" />
+    <option name="x" value="146" />
     <option name="width" value="1190" />
     <option name="height" value="687" />
   </component>
@@ -290,6 +256,11 @@
               <item name="data_transfer_scripts_20180205" type="b2602c69:ProjectViewProjectNode" />
               <item name="data_transfer_scripts_20180209" type="462c0819:PsiDirectoryNode" />
             </path>
+            <path>
+              <item name="data_transfer_scripts_20180205" type="b2602c69:ProjectViewProjectNode" />
+              <item name="data_transfer_scripts_20180209" type="462c0819:PsiDirectoryNode" />
+              <item name="db" type="462c0819:PsiDirectoryNode" />
+            </path>
           </expand>
           <select />
         </subPane>
@@ -301,7 +272,7 @@
   <component name="PropertiesComponent">
     <property name="settings.editor.selected.configurable" value="project.propVCSSupport.Mappings" />
     <property name="WebServerToolWindowFactoryState" value="false" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/../data_transfer_scripts_20180209" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../../../../sandstone/sandstone/om/sdsom" />
   </component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
@@ -446,15 +417,16 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="-8" y="-8" width="1936" height="1056" extended-state="7" />
+    <editor active="true" />
     <layout>
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="File Transfer" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.2078346" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.21218716" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.11425462" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.15342765" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
-      <window_info id="Project" active="true" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.1705757" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.1705757" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32934782" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
@@ -815,10 +787,18 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/../data_transfer_scripts_20180209/config.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="365">
+          <caret line="30" column="0" lean-forward="false" selection-start-line="30" selection-start-column="0" selection-end-line="30" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/../data_transfer_scripts_20180209/common_upload_check.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="228">
-          <caret line="243" column="0" lean-forward="false" selection-start-line="243" selection-start-column="0" selection-end-line="243" selection-end-column="0" />
+        <state relative-caret-position="308">
+          <caret line="243" column="28" lean-forward="true" selection-start-line="243" selection-start-column="28" selection-end-line="243" selection-end-column="28" />
           <folding>
             <element signature="e#23#38#0" expanded="true" />
           </folding>
@@ -827,26 +807,40 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/../data_transfer_scripts_20180209/common_upload_retry.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="556">
-          <caret line="295" column="0" lean-forward="true" selection-start-line="295" selection-start-column="0" selection-end-line="295" selection-end-column="0" />
-          <folding>
-            <element signature="e#23#38#0" expanded="true" />
-          </folding>
+        <state relative-caret-position="470">
+          <caret line="261" column="21" lean-forward="true" selection-start-line="261" selection-start-column="21" selection-end-line="261" selection-end-column="21" />
+          <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/../data_transfer_scripts_20180209/config.py">
+    <entry file="file://$PROJECT_DIR$/../data_transfer_scripts_20180209/common_upload.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-18">
-          <caret line="30" column="0" lean-forward="false" selection-start-line="30" selection-start-column="0" selection-end-line="30" selection-end-column="0" />
+        <state relative-caret-position="-399">
+          <caret line="0" column="0" lean-forward="true" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
           <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../data_transfer_scripts_20180209/db/oracle_db.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-1826">
+          <caret line="6" column="16" lean-forward="true" selection-start-line="6" selection-start-column="16" selection-end-line="6" selection-end-column="16" />
+          <folding>
+            <marker date="1518229859587" expanded="true" signature="2196:2634" ph="CREATE TABLE... IF" />
+            <marker date="1518229859587" expanded="true" signature="3361:3471" ph="INSERT INTO " />
+            <marker date="1518229859587" expanded="true" signature="4434:4458" ph="SELECT CLOUD... missing_value" />
+            <marker date="1518229859587" expanded="true" signature="5307:5322" ph="SELECT missi... missing_value" />
+            <marker date="1518229859587" expanded="true" signature="5307:5330" ph="SELECT missi... missing_value" />
+            <marker date="1518229859587" expanded="true" signature="5307:5331" ph="SELECT missi... missing_value" />
+            <marker date="1518229859587" expanded="true" signature="5307:5332" ph="SELECT missi... missing_value" />
+          </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/../data_transfer_scripts_20180209/db/base_db.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="254">
-          <caret line="16" column="17" lean-forward="false" selection-start-line="16" selection-start-column="17" selection-end-line="16" selection-end-column="17" />
+        <state relative-caret-position="513">
+          <caret line="27" column="32" lean-forward="false" selection-start-line="27" selection-start-column="8" selection-end-line="27" selection-end-column="32" />
           <folding>
             <element signature="e#62#78#0" expanded="true" />
           </folding>
@@ -855,82 +849,25 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/../data_transfer_scripts_20180209/db/db.conf">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="133">
-          <caret line="7" column="0" lean-forward="true" selection-start-line="7" selection-start-column="0" selection-end-line="7" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../data_transfer_scripts_20180209/common_upload.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="498">
-          <caret line="318" column="62" lean-forward="false" selection-start-line="318" selection-start-column="62" selection-end-line="318" selection-end-column="62" />
+        <state relative-caret-position="266">
+          <caret line="14" column="13" lean-forward="false" selection-start-line="14" selection-start-column="0" selection-end-line="14" selection-end-column="13" />
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/../data_transfer_scripts_20180209/db/mysql_db.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-205">
-          <caret line="7" column="7" lean-forward="false" selection-start-line="7" selection-start-column="7" selection-end-line="7" selection-end-column="14" />
+        <state relative-caret-position="323">
+          <caret line="113" column="28" lean-forward="true" selection-start-line="113" selection-start-column="28" selection-end-line="113" selection-end-column="28" />
           <folding>
-            <element signature="n#!!doc" expanded="false" />
-            <element signature="e#252#447#0" expanded="false" />
-            <element signature="e#252#302#1" expanded="false" />
-            <element signature="e#480#725#0" expanded="false" />
-            <element signature="e#533#604#0" expanded="false" />
-            <element signature="e#646#725#0" expanded="false" />
-            <element signature="e#761#1105#0" expanded="false" />
-            <element signature="e#828#1083#0" expanded="false" />
-            <element signature="e#1155#1859#0" expanded="false" />
-            <element signature="e#1155#1426#1" expanded="false" />
-            <element signature="e#1452#1748#0" expanded="false" />
-            <element signature="e#1777#1859#0" expanded="false" />
-            <element signature="e#1917#2533#0" expanded="false" />
-            <element signature="e#1962#2410#0" expanded="false" />
-            <element signature="e#1995#2410#0" expanded="false" />
-            <element signature="e#2573#2629#0" expanded="false" />
-            <element signature="e#2682#3772#0" expanded="false" />
-            <element signature="e#2682#2789#1" expanded="false" />
-            <element signature="e#2866#3289#0" expanded="false" />
-            <element signature="e#3324#3632#0" expanded="false" />
-            <element signature="e#3384#3539#0" expanded="false" />
-            <element signature="e#3826#4731#0" expanded="false" />
-            <element signature="e#3826#3918#1" expanded="false" />
-            <element signature="e#3944#4591#0" expanded="false" />
-            <element signature="e#4284#4498#0" expanded="false" />
-            <element signature="e#4798#5585#0" expanded="false" />
-            <element signature="e#4798#4992#1" expanded="false" />
-            <element signature="e#5036#5446#0" expanded="false" />
-            <element signature="e#5248#5353#0" expanded="false" />
-            <element signature="e#5669#6588#0" expanded="false" />
-            <element signature="e#5669#5863#1" expanded="false" />
-            <element signature="e#5912#6423#0" expanded="false" />
-            <element signature="e#6148#6324#0" expanded="false" />
-            <element signature="e#6727#6939#0" expanded="false" />
-            <marker date="1518158847855" expanded="false" signature="2869:3286" ph="CREATE TABLE... IF" />
-            <marker date="1518158847855" expanded="false" signature="4093:4120" ph="INSERT INTO missing_value... " />
-            <marker date="1518158847855" expanded="false" signature="5088:5111" ph="SELECT missi... missing_value" />
-            <marker date="1518158847855" expanded="false" signature="5088:5112" ph="SELECT missi... missing_value" />
-            <marker date="1518158847855" expanded="false" signature="5964:5979" ph="SELECT missi... missing_value" />
-            <marker date="1518158847855" expanded="false" signature="5964:5987" ph="SELECT missi... missing_value" />
-            <marker date="1518158847855" expanded="false" signature="5964:5988" ph="SELECT missi... missing_value" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../data_transfer_scripts_20180209/db/oracle_db.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="973">
-          <caret line="161" column="0" lean-forward="true" selection-start-line="161" selection-start-column="0" selection-end-line="161" selection-end-column="0" />
-          <folding>
-            <marker date="1518158862194" expanded="true" signature="2139:2577" ph="CREATE TABLE... IF" />
-            <marker date="1518158862194" expanded="true" signature="3301:3411" ph="INSERT INTO " />
-            <marker date="1518158862194" expanded="true" signature="4374:4398" ph="SELECT CLOUD... missing_value" />
-            <marker date="1518158862194" expanded="true" signature="5252:5267" ph="SELECT missi... missing_value" />
-            <marker date="1518158862194" expanded="true" signature="5252:5275" ph="SELECT missi... missing_value" />
-            <marker date="1518158862194" expanded="true" signature="5252:5276" ph="SELECT missi... missing_value" />
-            <marker date="1518158862194" expanded="true" signature="5252:5277" ph="SELECT missi... missing_value" />
+            <element signature="e#62#73#0" expanded="true" />
+            <marker date="1518229847053" expanded="true" signature="2933:3350" ph="CREATE TABLE... IF" />
+            <marker date="1518229847053" expanded="true" signature="4155:4182" ph="INSERT INTO missing_value... " />
+            <marker date="1518229847053" expanded="true" signature="5150:5173" ph="SELECT missi... missing_value" />
+            <marker date="1518229847053" expanded="true" signature="5150:5174" ph="SELECT missi... missing_value" />
+            <marker date="1518229847053" expanded="true" signature="6021:6036" ph="SELECT missi... missing_value" />
+            <marker date="1518229847053" expanded="true" signature="6021:6044" ph="SELECT missi... missing_value" />
+            <marker date="1518229847053" expanded="true" signature="6021:6045" ph="SELECT missi... missing_value" />
           </folding>
         </state>
       </provider>

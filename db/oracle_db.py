@@ -3,11 +3,8 @@
 # author:Wakesy
 
 import time
-import traceback
 from random import randint
-
 import cx_Oracle
-
 from db.base_db import CommonBaseDB as BaseDB
 from util import logger
 
@@ -22,6 +19,7 @@ class CommonOracleDB(BaseDB):
         super(CommonOracleDB, self).__init__(conf_file)
         self.connection = None
         self.cursor = None
+        self.table = ''
         self.build_connection()
 
     def __del__(self):
@@ -54,6 +52,7 @@ class CommonOracleDB(BaseDB):
                 self.connection = cx_Oracle.connect(self.db_info['user'], self.db_info['passwd'], "%s:%s/%s" %
                                                     (self.db_info['host'], int(self.db_info['port']),
                                                      self.db_info['db_name']))
+                self.table = self.db_info['default_table']
                 self.cursor = self.connection.cursor()  # 公共cursor
             else:
                 logger.error("Create db connection failed! DB config information is not correct!")
@@ -63,7 +62,7 @@ class CommonOracleDB(BaseDB):
     def get_connection(self):
         return self.connection
 
-    def ensure_table_created(self, table):
+    def ensure_table_created(self):
         '''重写父类建表方法
         :param table_name: 表名
         '''
@@ -77,7 +76,7 @@ class CommonOracleDB(BaseDB):
                      UPLOADIP           VARCHAR2(128),
                      UPLOADTIME         VARCHAR2(128),
                      MD5ID              VARCHAR2(128)
-                     )""" % table
+                     )""" % self.table
         try:
             if self.connection:
                 cursor = self.cursor if self.cursor else self.connection.cursor()
@@ -88,18 +87,18 @@ class CommonOracleDB(BaseDB):
         except Exception, error:
 
             if "ORA-00955" not in str(error):
-                logger.error("***Create table [%s] failed,error_msg:[%s]" % (table, error))
+                logger.error("***Create table [%s] failed,error_msg:[%s]" % (self.table, error))
                 return False
         return True
 
-    def insert_data(self, table, datainfo):
+    def insert_data(self, datainfo):
         '''重写插入数据方法
         :param table: 待插入的表名
         :param kwargs: 要插入的数据字典，对应字段名和值
         '''
         try:
 
-            insert_sql = "INSERT INTO %s VALUES(:filename, :fullsourcepath, :cloudpath, :uploadhostname, :uploadip, :uploadtime, :md5id)" % table
+            insert_sql = "INSERT INTO %s VALUES(:filename, :fullsourcepath, :cloudpath, :uploadhostname, :uploadip, :uploadtime, :md5id)" % self.table
             # print "insert_sql:", insert_sql
             if self.connection:
                 cursor = self.cursor if self.cursor else self.connection.cursor()
@@ -110,10 +109,10 @@ class CommonOracleDB(BaseDB):
             else:
                 logger.error("Inserting data Failed! Mysql connection hasn\'t been established!")
         except Exception , error:
-            logger.critical("***Inserting data to [%s] Failed:[%s]" % (table, error))
+            logger.critical("***Inserting data to [%s] Failed:[%s]" % (self.table, error))
         return False
 
-    def select_count(self, cols=[], table='', where=''):
+    def select_count(self, cols=[], where=''):
         '''重写查询数量的方法
         :param cols: 待查询的列，列表类型，如：['*']或者['name','age']
         :param table: 待查询的表
@@ -123,7 +122,7 @@ class CommonOracleDB(BaseDB):
         count = 0
         try:
             cols_str = ','.join(cols)
-            query_sql = "SELECT %s FROM %s WHERE %s" % (cols_str, table, where)  # 查询数量，检索出一个字段即可
+            query_sql = "SELECT %s FROM %s WHERE %s" % (cols_str, self.table, where)  # 查询数量，检索出一个字段即可
             # print "query_sql:", query_sql
             if self.connection:
                 cursor = self.connection.cursor()  # 查询的时候不复用，避免数据不正确
@@ -136,7 +135,7 @@ class CommonOracleDB(BaseDB):
         return count
 
     @count_time
-    def select_normal(self, cols=[], table='', where=''):
+    def select_normal(self, cols=[], where=''):
         '''重写查询出所有满足条件的数据方法
         :param cols: 待查询的列，列表类型，如：['*']或者['name','age']
         :param table: 待查询的表
@@ -146,7 +145,7 @@ class CommonOracleDB(BaseDB):
         results = None
         try:
             cols_str = ','.join(cols)
-            select_sql = "SELECT %s FROM %s WHERE %s ;" % (cols_str, table, where)
+            select_sql = "SELECT %s FROM %s WHERE %s ;" % (cols_str, self.table, where)
             # print "query_sql:", query_sql
             conn = self.connection
             if conn:

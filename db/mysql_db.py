@@ -3,10 +3,7 @@
 # author:Wakesy
 
 import time
-import traceback
-
 import MySQLdb
-
 from db.base_db import CommonBaseDB as BaseDB
 from util import logger
 
@@ -19,6 +16,7 @@ class CommonMysqlDB(BaseDB):
         super(CommonMysqlDB, self).__init__(conf_file)
         self.connection = None
         self.cursor = None
+        self.table = ''
         self.build_connection()
 
     def __del__(self):
@@ -67,6 +65,7 @@ class CommonMysqlDB(BaseDB):
                                                   user=self.db_info['user'],
                                                   passwd=self.db_info['passwd'], db=self.db_info['db_name'],
                                                   charset='utf8')
+                self.table = self.db_info['default_table']
                 self.cursor = self.connection.cursor()  # 创建一个公共cursor
         except Exception, error:
             logger.critical("***Building mysql connection failed,error_msg:[%s]" % error)
@@ -89,7 +88,7 @@ class CommonMysqlDB(BaseDB):
                      UPLOADIP           VARCHAR(128),
                      UPLOADTIME         VARCHAR(128),
                      MD5ID              VARCHAR(128)
-                     )""" % table
+                     )""" % self.table
 
         try:
             conn = self.connection
@@ -104,7 +103,7 @@ class CommonMysqlDB(BaseDB):
             logger.critical("***Creating table %s failed! ,error:[{}]".format(error))
         return False
 
-    def insert_data(self, table, datainfo):
+    def insert_data(self, datainfo):
         '''重写插入数据方法
         :param table: 待插入的表名
         :param kwargs: 要插入的数据字典，对应字段名和值
@@ -113,7 +112,7 @@ class CommonMysqlDB(BaseDB):
             values_str = self.get_values_str(datainfo)
             if not values_str:  # 格式化插入的数据失败，则插入失败
                 return False
-            insert_sql = "INSERT INTO %s  VALUES (%s) ;" % (table, values_str)  # 拼接插入语句
+            insert_sql = "INSERT INTO %s  VALUES (%s) ;" % (self.table, values_str)  # 拼接插入语句
             logger.debug("insert_sql:%s" % insert_sql)
 
             conn = self.connection
@@ -126,10 +125,10 @@ class CommonMysqlDB(BaseDB):
             else:
                 logger.error("Mysql connection hasn\'t been established!")
         except Exception, error:
-            logger.critical("***Inserting data to [%s] Failed:[%s]" % (table, error))
+            logger.critical("***Inserting data to [%s] Failed:[%s]" % (self.table, error))
         return False
 
-    def select_count(self, cols=[], table='', where=''):
+    def select_count(self, cols=[], where=''):
         '''重写查询数量的方法
         :param cols: 待查询的列，列表类型，如：['*']或者['name','age']
         :param table: 待查询的表
@@ -139,7 +138,7 @@ class CommonMysqlDB(BaseDB):
         count = 0
         try:
             cols_str = ','.join(cols)
-            select_sql = "SELECT %s FROM %s WHERE %s ;" % (cols_str, table, where)
+            select_sql = "SELECT %s FROM %s WHERE %s ;" % (cols_str, self.table, where)
             # print select_sql
             conn = self.connection
             if conn:
@@ -152,7 +151,7 @@ class CommonMysqlDB(BaseDB):
         return count
 
     @count_time
-    def select_normal(self, cols=[], table='', where=''):
+    def select_normal(self, cols=[], where=''):
         '''重写查询出所有满足条件的数据方法
         :param cols: 待查询的列，列表类型，如：['*']或者['name','age']
         :param table: 待查询的表
@@ -162,7 +161,7 @@ class CommonMysqlDB(BaseDB):
         results = None
         try:
             cols_str = ','.join(cols)
-            select_sql = "SELECT %s FROM %s WHERE %s ;" % (cols_str, table, where)
+            select_sql = "SELECT %s FROM %s WHERE %s ;" % (cols_str, self.table, where)
             logger.debug("select_sql:%s" % select_sql)
             conn = self.connection
             if conn:
