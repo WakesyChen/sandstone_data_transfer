@@ -17,8 +17,7 @@ from db.mysql_db import CommonMysqlDB
 from db.oracle_db import CommonOracleDB
 from multiupload import upload_file_multipart
 from util import logger
-reload(sys) 
-sys.setdefaultencoding('gbk')
+
 
 """
 三、脚本说明------最后检查，是否都已上传到MOS
@@ -38,6 +37,7 @@ db_connection = None
 db_type = None
 db_conf = DEFAULT_DB_CONF
 
+
 #==========================S3相关操作==========================
 
 def init_s3_connection():
@@ -45,8 +45,8 @@ def init_s3_connection():
         global AWS_ACCESS_KEY_ID, AWS_ACCESS_KEY_SECRET, HOST, PORT, S3_CONN
         S3_CONN = get_s3_connection(AWS_ACCESS_KEY_ID, AWS_ACCESS_KEY_SECRET, HOST, PORT)
         return True
-    except Exception,e:
-        logger.critical("init_s3_connection s3 failed: %s" % str(e))
+    except Exception, e:
+        logger.critical("init_s3_connection failed: %s" % str(e))
         return False
 
 
@@ -94,6 +94,7 @@ def iterate_over_directory_process(source_path, processor):
     '''
     # new_path = source_path
     if os.path.isfile(source_path):
+        collect_files(source_path, ALL_FILE_HANDLER)  # 记录所有遍历到的文件路径，便于分析
         cloud_path = source_path[len(UPLOAD_DIR):]
         processor(cloud_path, source_path)
 
@@ -101,57 +102,6 @@ def iterate_over_directory_process(source_path, processor):
         for subfile in os.listdir(source_path):
             new_path=os.path.join(source_path,subfile)
             iterate_over_directory_process(new_path, processor)
-
-
-def upload_file_to_s3(cloud_path, file_path):
-
-    if is_file_uploaded(cloud_path):
-        logger.info("File: %s has already been uploaded, go on for next file!", cloud_path)
-        return True
-
-    md5id = GetFileMd5(file_path)
-    try:
-        global BUCKET_PREF
-        bucket = S3_CONN.get_bucket(BUCKET_NAME, validate=False)
-        object_path = cloud_path.replace("\\", "/")
-
-        if object_path[0] == '/':
-            object_path = BUCKET_PREF + object_path
-        else:
-            object_path = BUCKET_PREF + '/' + object_path
-
-        kobject = bucket.new_key(object_path)
-        filesize = os.stat(file_path).st_size
-        if filesize >= MULTI_UPLOAD_THRESHOLD_SIZE:
-            upload_file_multipart(file_path, object_path, bucket, md5id)
-            logger.info("SUCCESS: multipart way, uploading destination object path: %s"%object_path)
-        else:
-            kobject.set_contents_from_filename(file_path, headers={'CONTENT-MD5' : md5id})
-            logger.info("SUCCESS: singlefile way, uploading destination file path: %s"%file_path)
-        # 插入记录到数据库
-        insert_file_record_to_db(cloud_path,  file_path)
-
-    except Exception,e:
-        S3_CONN.close()
-        logger.error("FAILURE: upload cloud_path: %s ,error: %s" % (cloud_path, str(e)))
-        collect_failed_files(file_path, UPLOAD_MOS_FAILED_LOG)
-        return False
-
-    return True
-
-
-def collect_failed_files(file_path, failed_log):
-    '''
-    :param failed_log: 记录上传失败的文件日志路径
-    :param file_path: 上传失败的文件路径
-    '''
-    if os.path.isfile(file_path):
-        try:
-            add_failed_file = "echo '{}' >> {}".format(file_path, failed_log)
-            ret_code, result = commands.getoutput(add_failed_file)
-            assert ret_code == 0, "Writing path [{0}] to [{1}] failed!".format(file_path, failed_log)
-        except Exception, error:
-            logger.error("***collect_failed_files, error_msg:[%s]" % error)
 
 
 #==========================数据库相关操作======================
@@ -178,123 +128,50 @@ def init_db_connection():
     return False
 
 
-def check_all_file_uploads(cloud_path, file_path):
-    if not is_file_uploaded(cloud_path):
-        logger.critical("***Not Uploaded File: [%s]" % file_path)
-    else:
-        logger.debug("Uploaded File:%s" % file_path)
-
-
-def is_file_uploaded(cloudpath):
+def check_from_db(fullpath):
     '''查询数据库上传记录，根据结果数目，判断文件是否上传'''
-    cols = ["CLOUDPATH"] # 待查询的列
-    where = "CLOUDPATH = '%s' " % cloudpath
-    query_count = db_instance.select_count(cols=cols, where=where)
-    return True if query_count > 0 else False
+    cols = ["FULLSOURCEPATH"]  # 待查询的列
+    where = ''
+    query_count, sql_status = db_instance.select_count(cols=cols, where=where, datainfo={'fullsourcepath': fullpath})
+    if sql_status == 0 and query_count < 1:
+        logger.critical("Not found in db, file: %s " % fullpath)
 
 
-def add_record_to_db(datainfo, fullpath):
-    '''上传到S3成功后，添加记录到数据库中'''
-    insert_success = db_instance.insert_data(datainfo)
 
-    if not insert_success:
-        # 没有插入成功，加入失败文件列表
-        collect_failed_files(fullpath, UPLOAD_ORACLE_FAILED_LOG)
-    return insert_success
-
-
-def insert_file_record_to_db(cloud_path, fullpath):
-    global BUCKET_PREF
-    fullpath = fullpath.replace("\\", "/")
-    cloud_path = cloud_path.replace("\\", "/")
-    hostname, ipaddr = get_hostname_and_ipaddr()
-
-    if cloud_path[0] == '/':
-        cloud_path = BUCKET_PREF + cloud_path
-    else:
-        cloud_path = BUCKET_PREF + '/' + cloud_path
+def collect_files(file_path, file_handler):
+    '''
+    :param failed_log: 记录上传失败的文件日志路径
+    :param file_path: 上传失败的文件路径
+    '''
     try:
+        file_handler.write(file_path)
+        file_handler.write("\n")
+    except Exception as err:
+        logger.error("Collecting files failed, error: %s , file: %s" % (err, file_path))
 
-        datainfo = {}
-        datainfo['filename'] = fullpath.split('/')[-1]
-        datainfo['fullsourcepath'] = fullpath
-        datainfo['cloudpath'] = cloud_path
-        datainfo['uploadhostname'] = hostname
-        datainfo['uploadip'] = ipaddr
-        datainfo['uploadtime'] = str(datetime.datetime.now())
-        datainfo['md5id'] = GetFileMd5(fullpath)
-        if add_record_to_db(datainfo, fullpath):
-            logger.info("SUCCESS: insert file to db: %s" % fullpath)
 
-    except Exception,error:
-        logger.error("FAILURE: insert file record error: %s, file: %s" % (str(error), fullpath))
-        # 插入失败，保存失败文件路径到指定日志
-        collect_failed_files(fullpath, UPLOAD_ORACLE_FAILED_LOG)
-        return False
-    return True
+def init_log(*logfiles):
+    import os
+    import time
+    import commands
+    for logfile in logfiles:
+        if os.path.isfile(logfile) and os.path.getsize(logfile) > 0:
+            old_log = logfile.replace(CURRENT_INDEX, "old_") + '_' + time.strftime('%Y-%m-%d-%H-%M-%S')
+            commands.getoutput('mv %s %s' % (logfile, old_log))
+            logger.info("Backup %s finished!" % logfile)
+
+    # 通过write方式写
+    global ALL_FILE_HANDLER
+    ALL_FILE_HANDLER = open(ALL_FILES_FOUND_LOG, "a")
 
 
 def ensure_table_created():
     return db_instance.ensure_table_created()
 
-#==========================公共方法==========================
-
-def get_user_paras():
-    try:
-        opt = OptionParser()
-
-        opt.add_option('--bucket-name',
-                       dest='bucket_name',
-                       type=str,
-                       default=BUCKET_NAME,
-                       help='bucket name')
-        opt.add_option('--local-path',
-                       dest="local_path",
-                       type=str,
-                       default=UPLOAD_DIR,
-                       help="sync source local path")
-        opt.add_option('--pref-path',
-                       dest="path_pref",
-                       type=str,
-                       default="",
-                       help="sync to pref file path")
-        (options, args) = opt.parse_args()
-        is_valid_paras = True
-        error_messages = []
-        bucket = options.bucket_name
-        local_path = options.local_path
-        path_pref = options.path_pref
-        if not bucket:
-            error_messages.append("bucket must be set;")
-            is_valid_paras = False
-        if not local_path:
-            error_messages.append("local path must be set;")
-            is_valid_paras = False
-
-        if is_valid_paras:
-            user_paras = {"bucket_name": bucket, "local_path": local_path, "path_pref": path_pref}
-            return user_paras
-        else:
-            for error_message in error_messages:
-                print(error_message)
-                opt.print_help()
-            return None
-    except Exception , error:
-        logger.info("get_user_paras error_msg:{0}".format(error))
-        return None
-
-
 
 if __name__ == "__main__":
     logger.critical("========[Start to Check]========")
     try:
-        user_paras = get_user_paras()
-        if not user_paras:
-            sys.exit(0)
-
-        # global UPLOAD_DIR, BUCKET_NAME
-        UPLOAD_DIR = user_paras['local_path']
-        BUCKET_NAME = user_paras['bucket_name']
 
         if not os.path.isdir(UPLOAD_DIR):
             logger.error("Invalid upload path: %s", UPLOAD_DIR)
@@ -310,7 +187,14 @@ if __name__ == "__main__":
         if not init_s3_connection():
             sys.exit(5)
 
-        iterate_over_directory_process(UPLOAD_DIR, check_all_file_uploads)
+        # 备份之前的记录，并开始记录遍历到的所有文件
+        init_log(ALL_FILES_FOUND_LOG)
+        # 建立索引加速遍历
+        db_instance.create_index('default_index', 'FULLSOURCEPATH')
+        # 开始遍历
+        iterate_over_directory_process(UPLOAD_DIR, check_from_db)
+        # 结束后删除索引
+        db_instance.drop_index()
 
         logger.critical("========[Check Finished!]========")
     except Exception, error :
@@ -318,5 +202,7 @@ if __name__ == "__main__":
     finally:
         if S3_CONN:
             S3_CONN.close ()
+        if ALL_FILE_HANDLER:
+            ALL_FILE_HANDLER.close()
 
     logger.critical("========[Exit Checking]========")

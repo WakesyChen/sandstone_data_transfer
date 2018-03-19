@@ -47,7 +47,7 @@ class CommonBaseDB(object):
         pass
 
 
-    def select_normal(self, cols=[], where=''):
+    def select_normal(self, cols=[], where='', datainfo={}):
         # 查询满足条件的项
         pass
 

@@ -46,7 +46,7 @@ class CommonOracleDB(BaseDB):
 
     @count_time
     def build_connection(self):
-        """创建MYSQL数据库的连接"""
+        """创建ORACLE数据库的连接"""
         try:
             if self.db_info:
                 self.connection = cx_Oracle.connect(self.db_info['user'], self.db_info['passwd'], "%s:%s/%s" %
@@ -55,9 +55,9 @@ class CommonOracleDB(BaseDB):
                 self.table = self.db_info['default_table']
                 self.cursor = self.connection.cursor()  # 公共cursor
             else:
-                logger.error("Create db connection failed! DB config information is not correct!")
+                logger.error("Building oracle connection failed! DB config information is not correct!")
         except Exception , error:
-            logger.critical("***Building oracle connection failed,error_msg:[%s]" % error)
+            logger.critical("Building oracle connection failed, error_msg: %s" % error)
 
     def get_connection(self):
         return self.connection
@@ -66,12 +66,11 @@ class CommonOracleDB(BaseDB):
         '''重写父类建表方法
         :param table_name: 表名
         '''
-
         # 文件名  源文件全路径   对象存储路径  上传节点主机名  上传节点IP    MD5
         create_sql = """CREATE TABLE  %s
                     (FILENAME           VARCHAR2(1024),
-                     FULLSOURCEPATH     VARCHAR2(3600),
-                     CLOUDPATH          VARCHAR2(3600) PRIMARY KEY,
+                     FULLSOURCEPATH     VARCHAR2(3600) PRIMARY KEY,
+                     CLOUDPATH          VARCHAR2(3600),
                      UPLOADHOSTNAME     VARCHAR2(256),
                      UPLOADIP           VARCHAR2(128),
                      UPLOADTIME         VARCHAR2(128),
@@ -85,9 +84,8 @@ class CommonOracleDB(BaseDB):
             else:
                 logger.error("Oracle connection hasn\'t been established!")
         except Exception, error:
-
             if "ORA-00955" not in str(error):
-                logger.error("***Create table [%s] failed,error_msg:[%s]" % (self.table, error))
+                logger.error("***Create table %s failed,error_msg:%s" % (self.table, error))
                 return False
         return True
 
@@ -96,43 +94,35 @@ class CommonOracleDB(BaseDB):
         :param table: 待插入的表名
         :param kwargs: 要插入的数据字典，对应字段名和值
         '''
-        try:
 
-            insert_sql = "INSERT INTO %s VALUES(:filename, :fullsourcepath, :cloudpath, :uploadhostname, :uploadip, :uploadtime, :md5id)" % self.table
-            # print "insert_sql:", insert_sql
-            if self.connection:
-                cursor = self.cursor if self.cursor else self.connection.cursor()
-                cursor.execute(insert_sql, datainfo)
-                self.connection.commit()
-                logger.info("Inserted data successfully!")
-                return True
-            else:
-                logger.error("Inserting data Failed! Mysql connection hasn\'t been established!")
-        except Exception , error:
-            logger.critical("***Inserting data to [%s] Failed:[%s]" % (self.table, error))
+        insert_sql = "INSERT INTO %s VALUES(:filename, :fullsourcepath, :cloudpath, :uploadhostname, :uploadip, :uploadtime, :md5id)" % self.table
+        if self.connection:
+            cursor = self.cursor if self.cursor else self.connection.cursor()
+            cursor.execute(insert_sql, datainfo)
+            self.connection.commit()
+            return True
         return False
 
-    def select_count(self, cols=[], where=''):
+
+    def select_count(self, cols=[], where='', datainfo={}):
         '''重写查询数量的方法
-        :param cols: 待查询的列，列表类型，如：['*']或者['name','age']
-        :param table: 待查询的表
-        :param where: 待查询的条件，如："name = 'Wakesy' and age > 23"
         :return: 查询结果数量
         '''
-        count = 0
+        count, sql_status = 0, 0 # sql_status，0表示查询正常，1表示查询异常
         try:
-            cols_str = ','.join(cols)
-            query_sql = "SELECT %s FROM %s WHERE %s" % (cols_str, self.table, where)  # 查询数量，检索出一个字段即可
-            # print "query_sql:", query_sql
+            # 针对广汽具体实现
+            query_sql = "select FULLSOURCEPATH from NAS_FILE_UPLOAD_STATUS  where FULLSOURCEPATH = :fullsourcepath"
+
             if self.connection:
                 cursor = self.connection.cursor()  # 查询的时候不复用，避免数据不正确
-                cursor.execute(query_sql)
+                cursor.execute(query_sql, datainfo)
                 item = cursor.fetchone()
                 if item:
                     count = 1
         except Exception , error:
-            logger.critical("***Selecting count failed! error_msg: [{}]".format(error))
-        return count
+            sql_status = 1
+            logger.error("Failure: Query db error: %s, fullpath: %s" % (error, datainfo.get('fullpath')))
+        return count, sql_status
 
     @count_time
     def select_normal(self, cols=[], where=''):
@@ -153,27 +143,35 @@ class CommonOracleDB(BaseDB):
                 cursor.execute(select_sql)
                 results = cursor.fetchall()
             else:
-                logger.error("Mysql connection hasn\'t been established!")
+                logger.error("DB connection hasn\'t been established!")
         except Exception , error:
             logger.error("***Selecting data failed! error_msg:%s" % error)
         return results
 
 
-if __name__ == '__main__':
-    DB_CONF = 'common_db.conf'
-    TABLE_NAME = 'mysql_test'
-    test_data = {"id": randint(50, 150),
-                 "name": "Jonhsy",
-                 "age": 23,
-                 "level": 12,
-                 "description": u"在山的那边海的那边，有一群白精灵，他们活泼又聪明！".encode('utf8')
-                 }
-    colomns = ['*']
-    # where = "name in ('wakesy', 'Coco','Johnsy')"
-    where = ""
-    mysql_db = CommonOracleDB(DB_CONF)
-    mysql_db.create_table(TABLE_NAME)
-    mysql_db.insert_data(TABLE_NAME, **test_data)
-    mysql_db.select_count(cols=['*'], table=TABLE_NAME, where=where)
-    print "-------------------"
-    mysql_db.select_normal(cols=['*'], table=TABLE_NAME, where=where)
+    def create_index(self, index_name, target_colonm):
+        try:
+            sql = "CREATE INDEX %s ON %s(%s)" % (index_name, self.table, target_colonm)
+            if self.connection:
+                cursor = self.connection.cursor()
+                cursor.execute(sql)
+                logger.info('Create index succeeded!')
+            else:
+                logger.error("DB connection hasn\'t been established!")
+        except Exception as error:
+            logger.error('Create index Failed! error:%s' % error)
+
+
+    def drop_index(self, index_name):
+        try:
+            sql = "DROP INDEX %s" % index_name
+            if self.connection:
+                cursor = self.connection.cursor()
+                cursor.execute(sql)
+                logger.info('Drop index succeeded!')
+            else:
+                logger.error("DB connection hasn\'t been established!")
+        except Exception as error:
+            logger.error("Drop index Failed! error: %s" % error)
+
+

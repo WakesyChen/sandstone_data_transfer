@@ -81,9 +81,9 @@ class CommonMysqlDB(BaseDB):
         '''
         # 文件名  源文件全路径   对象存储路径  上传节点主机名  上传节点IP    MD5
         create_sql = """CREATE TABLE IF NOT EXISTS %s
-                    (FILENAME           LONGTEXT,
-                     FULLSOURCEPATH     LONGTEXT,
-                     CLOUDPATH          LONGTEXT,
+                    (FILENAME           VARCHAR(500),
+                     FULLSOURCEPATH     VARCHAR(700) PRIMARY KEY,
+                     CLOUDPATH          VARCHAR(500),
                      UPLOADHOSTNAME     VARCHAR(256),
                      UPLOADIP           VARCHAR(128),
                      UPLOADTIME         VARCHAR(128),
@@ -108,34 +108,30 @@ class CommonMysqlDB(BaseDB):
         :param table: 待插入的表名
         :param kwargs: 要插入的数据字典，对应字段名和值
         '''
-        try:
-            values_str = self.get_values_str(datainfo)
-            if not values_str:  # 格式化插入的数据失败，则插入失败
-                return False
-            insert_sql = "INSERT INTO %s  VALUES (%s) ;" % (self.table, values_str)  # 拼接插入语句
-            logger.debug("insert_sql:%s" % insert_sql)
 
-            conn = self.connection
-            if conn:
-                cursor = self.cursor if self.cursor else conn.cursor()
-                cursor.execute(insert_sql)
-                conn.commit()
-                logger.info("Inserted data successfully!")
-                return True
-            else:
-                logger.error("Mysql connection hasn\'t been established!")
-        except Exception, error:
-            logger.critical("***Inserting data to [%s] Failed:[%s]" % (self.table, error))
+        values_str = self.get_values_str(datainfo)
+        if not values_str:  # 格式化插入的数据失败，则插入失败
+            return False
+        insert_sql = "INSERT INTO %s  VALUES (%s) ;" % (self.table, values_str)  # 拼接插入语句
+        logger.debug("insert_sql:%s" % insert_sql)
+
+        conn = self.connection
+        if conn:
+            cursor = self.cursor if self.cursor else conn.cursor()
+            cursor.execute(insert_sql)
+            conn.commit()
+            logger.info("Inserted data successfully!")
+            return True
         return False
 
-    def select_count(self, cols=[], where=''):
+    def select_count(self, cols=[], where='', datainfo={}):
         '''重写查询数量的方法
         :param cols: 待查询的列，列表类型，如：['*']或者['name','age']
         :param table: 待查询的表
         :param where: 待查询的条件，如："name = 'Wakesy' and age > 23"
         :return: 查询结果数量
         '''
-        count = 0
+        count, sql_status = 0, 0  # sql_status，0表示查询正常，1表示查询异常
         try:
             cols_str = ','.join(cols)
             select_sql = "SELECT %s FROM %s WHERE %s ;" % (cols_str, self.table, where)
@@ -147,8 +143,9 @@ class CommonMysqlDB(BaseDB):
             else:
                 logger.error("Mysql connection hasn\'t been established!")
         except Exception, error:
+            sql_status = 1
             logger.critical("***Select count failed! error_msg: [{}]".format(error))
-        return count
+        return count, sql_status
 
     @count_time
     def select_normal(self, cols=[], where=''):
@@ -177,23 +174,28 @@ class CommonMysqlDB(BaseDB):
             return results
 
 
-if __name__ == '__main__':
-    from random import randint
+    def create_index(self, index_name, target_colonm):
+        try:
+            sql = "CREATE INDEX %s ON %s(%s)" % (index_name, self.table, target_colonm)
+            if self.connection:
+                cursor = self.connection.cursor()
+                cursor.execute(sql)
+                logger.info('Create index succeeded!')
+            else:
+                logger.error("DB connection hasn\'t been established!")
+        except Exception as error:
+            logger.error('Create index Failed! error:%s' % error)
 
-    DB_CONF = 'common_db.conf'
-    TABLE_NAME = 'mysql_test'
-    test_data = {"id": randint(50, 150),
-                 "name": "Jonhsy",
-                 "age": 23,
-                 "level": 12,
-                 "description": u"在山的那边海的那边，有一群白精灵，他们活泼又聪明！".encode('utf8')
-                 }
-    colomns = ['*']
-    # where = "name in ('wakesy', 'Coco','Johnsy')"
-    where = ""
-    mysql_db = CommonMysqlDB(DB_CONF)
-    mysql_db.create_table(TABLE_NAME)
-    mysql_db.insert_data(TABLE_NAME, **test_data)
-    mysql_db.select_count(cols=['*'], table=TABLE_NAME, where=where)
-    print "-------------------"
-    mysql_db.select_normal(cols=['*'], table=TABLE_NAME, where=where)
+
+    def drop_index(self, index_name):
+        try:
+            sql = "DROP INDEX %s" % index_name
+            if self.connection:
+                cursor = self.connection.cursor()
+                cursor.execute(sql)
+                logger.info('Drop index succeeded!')
+            else:
+                logger.error("DB connection hasn\'t been established!")
+        except Exception as error:
+            logger.error("Drop index Failed! error: %s" % error)
+

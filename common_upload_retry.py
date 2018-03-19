@@ -86,100 +86,66 @@ def get_s3_connection(access_key, secret_key, host, port):
         calling_format=boto.s3.connection.OrdinaryCallingFormat(),)
     return S3_CONN
 
- 
-def iterate_over_directory_process(source_path, processor):
-    '''
-    iterate over source_path,and process files with function: processor
-    '''
-    new_path = source_path
-    if os.path.isfile(source_path):
-        cloud_path = source_path[len(UPLOAD_DIR):]
-        processor(cloud_path, source_path)
-
-    elif os.path.isdir(source_path):
-        for subfile in os.listdir(source_path):
-            new_path=os.path.join(source_path,subfile)
-            iterate_over_directory_process(new_path, processor)
-
 
 def upload_file_to_s3(cloud_path, file_path):
-
-    if is_file_uploaded(cloud_path):
-        logger.info("File: %s has already been uploaded, go on for next file!", cloud_path)
+    if is_file_uploaded(file_path):
+        logger.info("FOUND upload record in DB, file path: %s", file_path)
         return True
 
-    md5id = GetFileMd5(file_path)
     try:
+        md5id = GetFileMd5(file_path)
+        if not S3_CONN:
+            init_s3_connection()
         global BUCKET_PREF
         bucket = S3_CONN.get_bucket(BUCKET_NAME, validate=False)
         object_path = cloud_path.replace("\\", "/")
-
         if object_path[0] == '/':
             object_path = BUCKET_PREF + object_path
         else:
             object_path = BUCKET_PREF + '/' + object_path
-
         kobject = bucket.new_key(object_path)
         filesize = os.stat(file_path).st_size
         if filesize >= MULTI_UPLOAD_THRESHOLD_SIZE:
             upload_file_multipart(file_path, object_path, bucket, md5id)
-            logger.info("SUCCESS: multipart way, uploading destination object path: %s"%object_path)
+            logger.info("SUCCESS to S3: multipart way,  uploading file path: %s" % file_path)
         else:
-            kobject.set_contents_from_filename(file_path, headers={'CONTENT-MD5' : md5id})
-            logger.info("SUCCESS: singlefile way, uploading destination file path: %s"%file_path)
+            kobject.set_contents_from_filename(file_path, headers={'CONTENT-MD5': md5id})
+            logger.info("SUCCESS to S3: singlefile way, uploading file path: %s" % file_path)
         # 插入记录到数据库
-        insert_file_record_to_db(cloud_path,  file_path)
+        insert_file_record_to_db(cloud_path, file_path)
 
-    except Exception,error:
+    except Exception, e:
         S3_CONN.close()
-        logger.error("FAILURE: upload cloud_path: %s ,error: %s" % (cloud_path, str(error)))
-        collect_failed_files(file_path, REUPLOAD_FAILED_LOG)
+        logger.error("FAILURE to S3: error: %s, uploading file path: %s" % (e, file_path))
         return False
 
     return True
 
 
-def collect_failed_files(file_path, failed_log):
-    '''
-    :param failed_log: 记录上传失败的文件日志路径
-    :param file_path: 上传失败的文件路径
-    '''
-    if os.path.isfile(file_path):
-        try:
-            add_failed_file = "echo '{}' >> {}".format(file_path, failed_log)
-            ret_code, result = commands.getoutput(add_failed_file)
-            assert ret_code == 0, "Writing path [{0}] to [{1}] failed!".format(file_path, failed_log)
-        except Exception, error:
-            logger.error("***collect_failed_files, error_msg:[%s]" % error)
+def reupload_failed_files(*failed_file_logs):
 
-
-def reupload_failed_files():
-
-    failed_file_logs = [UPLOAD_MOS_FAILED_LOG, UPLOAD_ORACLE_FAILED_LOG]
     for failed_log in failed_file_logs:
         # 失败日志文件存在，且不为空,否则跳过
         if not os.path.isfile(failed_log) or (os.path.isfile(failed_log) and os.path.getsize(failed_log) == 0):
-            logger.info("***Reupload failed: [%s] does\'t exist or is empty." % failed_log)
+            logger.info("FAILURE: Reuploading failed, log_path [%s] does\'t exist or is empty." % failed_log)
             continue
-        failed_file = "first file path"  # 开启循环
+        failed_file = "first file path" # 开启循环
         try:
-            logger.info("***Start read :[%s]" % failed_log)
+            logger.info("***Start to read file: [%s]" % failed_log)
             with open(failed_log, "r") as f:
                 # 逐条读出，失败记录中的文件路径
                 while failed_file:
                     failed_file = f.readline().strip()
-                    if os.path.isfile(failed_file):
-                        cloud_path = failed_file[len(UPLOAD_DIR):]
-                        if not is_file_uploaded(cloud_path):
-                            upload_file_to_s3(cloud_path, failed_file)
-                    else:
-                        logger.info("***Invalid file path:[{}]".format(failed_file))
-                        # 读出的不是文件路径，则读取下一条
+
+                    if not os.path.isfile(failed_file):
+                        logger.info("FAILURE: Not correct file path: {0}".format(failed_file))
                         continue
-                # 全部读完后，清空上次失败文件的内容
-                init_log(UPLOAD_MOS_FAILED_LOG, UPLOAD_ORACLE_FAILED_LOG)
-        except Exception, error:
-            logger.error("***Upload [%s] failed, error: %s" % (failed_file, error))
+                    cloud_path = failed_file[len(UPLOAD_DIR):]
+                    upload_file_to_s3(cloud_path, failed_file)
+
+        except Exception as err :
+            logger.error("***Reupload failed, error: %s, file: %s" % (err, failed_file))
+    logger.info("***Upload failed_files finished!")
 
 #==========================数据库相关操作======================
 
@@ -205,21 +171,21 @@ def init_db_connection():
     return False
 
 
-def is_file_uploaded(cloudpath):
+def is_file_uploaded(fullsourcepath):
     '''查询数据库上传记录，根据结果数目，判断文件是否上传'''
-    cols = ["CLOUDPATH"] # 待查询的列
-    where = "CLOUDPATH = '%s' " % cloudpath
-    query_count = db_instance.select_count(cols=cols, where=where)
-    return True if query_count > 0 else False
+    cols = ["FULLSOURCEPATH"] # 待查询的列
+    where = ''
+    query_count, sql_status = db_instance.select_count(cols=cols, where=where, datainfo={'fullsourcepath': fullsourcepath})
+    if sql_status == 0 and query_count > 0:
+        return True
+    else:
+        return False
 
 
 def add_record_to_db(datainfo, fullpath):
     '''上传到S3成功后，添加记录到数据库中'''
-    insert_success = db_instance.insert_data(datainfo)
-    if not insert_success:
-        # 没有插入成功，加入重传失败文件列表
-        collect_failed_files(fullpath, REUPLOAD_FAILED_LOG)
-    return insert_success
+    insert_status = db_instance.insert_data(datainfo)
+    return insert_status
 
 
 def insert_file_record_to_db(cloud_path, fullpath):
@@ -227,13 +193,11 @@ def insert_file_record_to_db(cloud_path, fullpath):
     fullpath = fullpath.replace("\\", "/")
     cloud_path = cloud_path.replace("\\", "/")
     hostname, ipaddr = get_hostname_and_ipaddr()
-
     if cloud_path[0] == '/':
         cloud_path = BUCKET_PREF + cloud_path
     else:
         cloud_path = BUCKET_PREF + '/' + cloud_path
     try:
-
         datainfo = {}
         datainfo['filename'] = fullpath.split('/')[-1]
         datainfo['fullsourcepath'] = fullpath
@@ -243,13 +207,10 @@ def insert_file_record_to_db(cloud_path, fullpath):
         datainfo['uploadtime'] = str(datetime.datetime.now())
         datainfo['md5id'] = GetFileMd5(fullpath)
         if add_record_to_db(datainfo, fullpath):
-            logger.info("SUCCESS: insert file to db: %s" % fullpath)
+            logger.info("SUCCESS: insert file to oracle db: %s" % fullpath)
 
-
-    except Exception,error:
-        logger.error("FAILURE: insert file record error: %s, file: %s" % (str(error), fullpath))
-        # 插入失败，保存失败文件路径到指定日志
-        collect_failed_files(fullpath, REUPLOAD_FAILED_LOG)
+    except Exception,e:
+        logger.error("FAILURE: insert file record error: %s, file: %s" % (str(e), fullpath))
         return False
     return True
 
@@ -259,67 +220,11 @@ def ensure_table_created():
 
 #==========================公共方法===========================
 
-def get_user_paras():
-    try:
-        opt = OptionParser()
-
-        opt.add_option('--bucket-name',
-                       dest='bucket_name',
-                       type=str,
-                       default=BUCKET_NAME,
-                       help='bucket name')
-        opt.add_option('--local-path',
-                       dest="local_path",
-                       type=str,
-                       default=UPLOAD_DIR,
-                       help="sync source local path")
-        opt.add_option('--pref-path',
-                       dest="path_pref",
-                       type=str,
-                       default="",
-                       help="sync to pref file path")
-        (options, args) = opt.parse_args()
-        is_valid_paras = True
-        error_messages = []
-        bucket = options.bucket_name
-        local_path = options.local_path
-        path_pref = options.path_pref
-        if not bucket:
-            error_messages.append("bucket must be set;")
-            is_valid_paras = False
-        if not local_path:
-            error_messages.append("local path must be set;")
-            is_valid_paras = False
-
-        if is_valid_paras:
-            user_paras = {"bucket_name": bucket, "local_path": local_path, "path_pref": path_pref}
-            return user_paras
-        else:
-            for error_message in error_messages:
-                print(error_message)
-                opt.print_help()
-            return None
-    except Exception, error:
-        logger.info("get_user_paras error_msg:{0}".format(error))
-        return None
-
-
-def init_log(*logfiles):
-    for log in logfiles:
-        commands.getoutput('cat /dev/null > %s' % log)
-        logger.info("Empty %s finished!" % log)
 
 
 if __name__ == "__main__":
     logger.critical("========[Start to ReUpload]========")
     try:
-        user_paras = get_user_paras()
-        if not user_paras:
-            sys.exit(0)
-
-        # global UPLOAD_DIR, BUCKET_NAME
-        UPLOAD_DIR = user_paras['local_path']
-        BUCKET_NAME = user_paras['bucket_name']
 
         if not os.path.isdir(UPLOAD_DIR):
             logger.error("Invalid upload path: %s", UPLOAD_DIR)
@@ -335,10 +240,8 @@ if __name__ == "__main__":
         if not init_s3_connection():
             sys.exit(5)
 
-        # 清空记录之前二次上传，失败文件的日志
-        init_log(REUPLOAD_FAILED_LOG)
-        # 开始读取上次上传到s3和oracle，失败文件的两个日志,重新上传
-        reupload_failed_files()
+        # 开始读取上次上传到s3和db，失败文件的两个日志,重新上传
+        reupload_failed_files(UPLOAD_MOS_FAILED_LOG, UPLOAD_DB_FAILED_LOG)
 
         logger.critical("========[ReUpload finished!]========")
     except Exception, error:
