@@ -18,7 +18,7 @@ from optparse import OptionParser
 from multiupload import upload_file_multipart
 from random import randint
 reload(sys)
-sys.setdefaultencoding('gbk')
+sys.setdefaultencoding('utf-8')
 
 ORACLE_CONNECTION = None
 ORACLE_CURSOR = None

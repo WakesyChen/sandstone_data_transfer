@@ -17,7 +17,8 @@ from db.mysql_db import CommonMysqlDB
 from db.oracle_db import CommonOracleDB
 from multiupload import upload_file_multipart
 from util import logger
-
+reload(sys)
+sys.setdefaultencoding('utf-8')
 
 """
 三、脚本说明------最后检查，是否都已上传到MOS

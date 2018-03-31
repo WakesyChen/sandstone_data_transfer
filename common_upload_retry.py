@@ -18,7 +18,7 @@ from db.oracle_db import CommonOracleDB
 from multiupload import upload_file_multipart
 from util import logger
 reload(sys) 
-sys.setdefaultencoding('gbk')
+sys.setdefaultencoding('utf-8')
 
 """
 二、脚本说明--------第二次，尝试重传上次上传失败的文件

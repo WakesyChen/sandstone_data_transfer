@@ -17,7 +17,8 @@ from db.mysql_db import CommonMysqlDB
 from db.oracle_db import CommonOracleDB
 from multiupload import upload_file_multipart
 from util import logger
-
+reload(sys)
+sys.setdefaultencoding('utf-8')
 """
 一、脚本说明------首次上传
    第一次上传某个文件夹下的所有文件到MOS（即S3），并记录每个文件到数据库；
